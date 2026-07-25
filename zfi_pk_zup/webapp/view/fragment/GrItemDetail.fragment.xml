@@ -5,20 +5,20 @@
         title="Chi tiết Item — GR {itemDialog>/grNumber}"
         contentWidth="50rem">
         <customHeader>
-            <Bar>
+            <Bar id="_gidBar">
                 <contentMiddle>
-                    <Title text="Chi tiết item" level="H1" />
+                    <Title id="_gidTitle" text="Chi tiết item" level="H1" />
                 </contentMiddle>
                 <contentRight>
-                    <HBox alignItems="Center" class="sapUiSmallMarginEnd">
-                        <ObjectStatus text="{itemDialog>/totalItems} item"
+                    <HBox id="_gidStatsBox" alignItems="Center" class="sapUiSmallMarginEnd">
+                        <ObjectStatus id="_gidStatTotal" text="{itemDialog>/totalItems} item"
                             state="Information"
                             class="sapUiSmallMarginEnd" />
-                        <ObjectStatus text="{itemDialog>/validItems} ✓"
+                        <ObjectStatus id="_gidStatValid" text="{itemDialog>/validItems} ✓"
                             state="Success"
                             icon="sap-icon://accept"
                             class="sapUiSmallMarginEnd" />
-                        <ObjectStatus text="{itemDialog>/invalidItems} ✕"
+                        <ObjectStatus id="_gidStatInvalid" text="{itemDialog>/invalidItems} ✕"
                             state="{itemDialog>/summaryState}"
                             icon="sap-icon://alert" />
                     </HBox>
@@ -36,6 +36,7 @@
                     <Column id="_gidc6" width="7rem" hAlign="End"><Text id="_gidt6" text="Receive Qty" /></Column>
                     <Column id="_gidc7" width="5rem"><Text id="_gidt7" text="Unit" /></Column>
                     <Column id="_gidc8" width="9rem"><Text id="_gidt8" text="Status" /></Column>
+                    <Column id="_gidc9" width="20rem"><Text id="_gidt9" text="Message" /></Column>
                 </columns>
                 <items>
                     <ColumnListItem id="_giditem"
@@ -51,16 +52,17 @@
                             <ObjectStatus id="_gidcell8"
                                 text="{gr>Status}"
                                 state="{= ${gr>StatusCriticality} === 3 ? 'Success' : ${gr>StatusCriticality} === 1 ? 'Error' : 'None' }" />
+                            <Text id="_gidcell9" text="{gr>Message}" wrapping="false" tooltip="{gr>Message}" />
                         </cells>
                     </ColumnListItem>
                 </items>
             </Table>
-            <Panel headerText="Các lỗi item" expandable="false"
+            <Panel id="_gidErrorPanel" headerText="Các lỗi item" expandable="false"
                 visible="{itemDialog>/hasErrors}"
                 class="sapUiSmallMarginTop">
                 <List id="_gidErrorList" items="{path:'itemDialog>/errors'}">
                     <items>
-                        <StandardListItem title="{itemDialog>title}"
+                        <StandardListItem id="_gidErrorItem" title="{itemDialog>title}"
                             description="{itemDialog>description}"
                             type="Inactive" />
                     </items>
