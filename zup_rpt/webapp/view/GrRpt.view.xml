@@ -68,6 +68,24 @@
                                 valueColor="Neutral" withMargin="false" icon="sap-icon://pending" />
                         </TileContent></tileContent>
                     </GenericTile>
+                    <GenericTile id="_gk5" header="Tỷ lệ Success" frameType="OneByOne">
+                        <tileContent><TileContent id="_gkt5">
+                            <NumericContent id="_gkn5" value="{rpt>/kpi/successRate}"
+                                numberUnit="%" valueColor="Good" withMargin="false" icon="sap-icon://accept" />
+                        </TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile id="_gk6" header="Tỷ lệ Error" frameType="OneByOne">
+                        <tileContent><TileContent id="_gkt6">
+                            <NumericContent id="_gkn6" value="{rpt>/kpi/errorRate}"
+                                numberUnit="%" valueColor="Critical" withMargin="false" icon="sap-icon://error" />
+                        </TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile id="_gk7" header="TG xử lý TB (giây)" frameType="OneByOne">
+                        <tileContent><TileContent id="_gkt7">
+                            <NumericContent id="_gkn7" value="{rpt>/kpi/avgSeconds}"
+                                valueColor="Neutral" withMargin="false" icon="sap-icon://history" />
+                        </TileContent></tileContent>
+                    </GenericTile>
                 </f:items>
             </f:GridContainer>
 

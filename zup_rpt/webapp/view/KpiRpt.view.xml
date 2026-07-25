@@ -1,0 +1,157 @@
+<mvc:View controllerName="zuprpt.controller.KpiRpt"
+    xmlns:mvc="sap.ui.core.mvc" xmlns="sap.m" xmlns:f="sap.f"
+    xmlns:core="sap.ui.core" xmlns:table="sap.ui.table" displayBlock="true">
+
+    <Page id="kpiRptPage" title="Upload KPI Dashboard (GR + FI + PP)"
+        showNavButton="true" navButtonPress="onNavBack">
+        <content>
+            <core:Fragment fragmentName="zuprpt.view.fragment.Busy" type="XML" />
+
+            <!-- FILTER BAR -->
+            <Panel id="kpiFilterPanel" class="sapUiSmallMargin" width="auto">
+                <content>
+                    <HBox id="_kpfBox" wrap="Wrap" alignItems="End">
+                        <VBox id="_kpf1" class="sapUiTinyMarginEnd">
+                            <Label id="_kpfl1" text="Ngày chứng từ" />
+                            <DateRangeSelection id="kpiDateRange" width="18rem"
+                                displayFormat="dd/MM/yyyy" valueFormat="yyyy-MM-dd" />
+                        </VBox>
+                        <VBox id="_kpf2" class="sapUiTinyMarginEnd">
+                            <Label id="_kpfl2" text="Loại chứng từ" />
+                            <Select id="kpiDocType" width="9rem">
+                                <core:Item id="_kpt0" key="" text="Tất cả" />
+                                <core:Item id="_kpt1" key="GR" text="GR" />
+                                <core:Item id="_kpt2" key="FI" text="FI" />
+                                <core:Item id="_kpt3" key="PP" text="PP" />
+                            </Select>
+                        </VBox>
+                        <VBox id="_kpf3" class="sapUiTinyMarginEnd">
+                            <Label id="_kpfl3" text="Trạng thái" />
+                            <Select id="kpiStatus" width="10rem">
+                                <core:Item id="_kps0" key="" text="Tất cả" />
+                                <core:Item id="_kps1" key="S" text="S — Thành công" />
+                                <core:Item id="_kps2" key="E" text="E — Lỗi" />
+                                <core:Item id="_kps3" key="R" text="R — Nháp" />
+                                <core:Item id="_kps4" key="P" text="P — Đang xử lý" />
+                            </Select>
+                        </VBox>
+                        <VBox id="_kpf4" class="sapUiTinyMarginEnd">
+                            <Label id="_kpfl4" text="Created By" />
+                            <Input id="kpiCreatedBy" width="10rem" placeholder="username" />
+                        </VBox>
+                        <Button id="kpiBtnGo" text="Go" type="Emphasized" press="onGo"
+                            icon="sap-icon://search" class="sapUiTinyMarginEnd" />
+                        <Button id="kpiBtnClear" text="Clear" press="onClearFilters"
+                            icon="sap-icon://clear-filter" />
+                    </HBox>
+                </content>
+            </Panel>
+
+            <!-- KPI -->
+            <f:GridContainer id="kpiKpiGrid" class="sapUiSmallMarginBegin sapUiSmallMarginBottom">
+                <f:layout>
+                    <f:GridContainerSettings id="_kpkgcs" rowSize="5rem" columnSize="11rem" gap="0.75rem" />
+                </f:layout>
+                <f:items>
+                    <GenericTile id="_kpk1" header="Tổng số lô" frameType="OneByOne">
+                        <tileContent><TileContent id="_kpkt1">
+                            <NumericContent id="_kpkn1" value="{rpt>/kpi/total}"
+                                withMargin="false" icon="sap-icon://activity-items" />
+                        </TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile id="_kpk2" header="Thành công" frameType="OneByOne">
+                        <tileContent><TileContent id="_kpkt2">
+                            <NumericContent id="_kpkn2" value="{rpt>/kpi/success}"
+                                valueColor="Good" withMargin="false" icon="sap-icon://accept" />
+                        </TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile id="_kpk3" header="Lỗi" frameType="OneByOne">
+                        <tileContent><TileContent id="_kpkt3">
+                            <NumericContent id="_kpkn3" value="{rpt>/kpi/error}"
+                                valueColor="Critical" withMargin="false" icon="sap-icon://error" />
+                        </TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile id="_kpk4" header="Đang xử lý" frameType="OneByOne">
+                        <tileContent><TileContent id="_kpkt4">
+                            <NumericContent id="_kpkn4" value="{rpt>/kpi/pending}"
+                                valueColor="Neutral" withMargin="false" icon="sap-icon://pending" />
+                        </TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile id="_kpk5" header="TG xử lý TB (giây)" subheader="Chỉ tính GR" frameType="OneByOne">
+                        <tileContent><TileContent id="_kpkt5">
+                            <NumericContent id="_kpkn5" value="{rpt>/kpi/avgSeconds}"
+                                valueColor="Neutral" withMargin="false" icon="sap-icon://history" />
+                        </TileContent></tileContent>
+                    </GenericTile>
+                </f:items>
+            </f:GridContainer>
+
+            <!-- CHART -->
+            <Panel id="kpiChartPanel" class="sapUiSmallMargin" expandable="true"
+                expanded="true" width="auto">
+                <headerToolbar>
+                    <OverflowToolbar id="_kpcTb">
+                        <Title id="_kpcTitle" text="Phân tích nhanh" />
+                        <ToolbarSpacer id="_kpcSp" />
+                        <Label id="_kpcLblD" text="Nhóm theo:" class="sapUiTinyMarginEnd" />
+                        <Select id="kpiChartDim" selectedKey="doctype" change="onChartConfigChange">
+                            <core:Item id="_kpcd0" key="doctype" text="Loại chứng từ" />
+                            <core:Item id="_kpcd1" key="status" text="Status" />
+                            <core:Item id="_kpcd2" key="month" text="Tháng" />
+                            <core:Item id="_kpcd3" key="user" text="Created By" />
+                        </Select>
+                    </OverflowToolbar>
+                </headerToolbar>
+                <content>
+                    <ScrollContainer id="_kpChartScroll" horizontal="true" vertical="false" width="100%">
+                        <core:HTML id="kpiChartHtml" />
+                    </ScrollContainer>
+                </content>
+            </Panel>
+
+            <!-- TABLE -->
+            <table:Table id="kpiRptTable" selectionMode="None"
+                visibleRowCountMode="Interactive" class="sapUiSmallMargin"
+                rows="{rpt>/rows}">
+                <table:extension>
+                    <OverflowToolbar id="_kpTb">
+                        <Title id="_kpTbTitle" text="Danh sách ({rpt>/kpi/total})" />
+                        <ToolbarSpacer id="_kpTbSp" />
+                        <Button id="kpiBtnExport" text="Xuất Excel" type="Accept"
+                            icon="sap-icon://excel-attachment" press="onExport" />
+                    </OverflowToolbar>
+                </table:extension>
+                <table:noData>
+                    <IllustratedMessage id="_kpNoData" enableVerticalResponsiveness="true"
+                        title="Chưa có dữ liệu" description="Điều chỉnh bộ lọc rồi bấm Go" />
+                </table:noData>
+                <table:columns>
+                    <table:Column id="_kpc1" width="6rem"><Label id="_kpl1" text="Loại" />
+                        <table:template><ObjectStatus id="_kpt_1" text="{rpt>DocType}" /></table:template>
+                    </table:Column>
+                    <table:Column id="_kpc2" width="12rem"><Label id="_kpl2" text="Mã chứng từ" />
+                        <table:template><Text id="_kpt_2" text="{rpt>DocId}" wrapping="false" /></table:template>
+                    </table:Column>
+                    <table:Column id="_kpc3" width="9rem"><Label id="_kpl3" text="Status" />
+                        <table:template>
+                            <ObjectStatus id="_kpt_3" text="{rpt>Status}"
+                                state="{path: 'rpt>Status', formatter: '.formatter.uploadStatusToState'}" />
+                        </table:template>
+                    </table:Column>
+                    <table:Column id="_kpc4" width="9rem"><Label id="_kpl4" text="Ngày chứng từ" />
+                        <table:template><Text id="_kpt_4" text="{path: 'rpt>DocDate', formatter: '.formatter.date'}" wrapping="false" /></table:template>
+                    </table:Column>
+                    <table:Column id="_kpc5" width="20rem"><Label id="_kpl5" text="Batch / Filename" />
+                        <table:template><Text id="_kpt_5" text="{rpt>BatchId}" wrapping="false" /></table:template>
+                    </table:Column>
+                    <table:Column id="_kpc6" width="20rem"><Label id="_kpl6" text="Message" />
+                        <table:template><Text id="_kpt_6" text="{rpt>Message}" wrapping="false" /></table:template>
+                    </table:Column>
+                    <table:Column id="_kpc7" width="10rem"><Label id="_kpl7" text="Created By" />
+                        <table:template><Text id="_kpt_7" text="{rpt>CreatedBy}" wrapping="false" /></table:template>
+                    </table:Column>
+                </table:columns>
+            </table:Table>
+        </content>
+    </Page>
+</mvc:View>

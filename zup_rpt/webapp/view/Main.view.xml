@@ -200,6 +200,42 @@
                         </VBox>
                     </f:content>
                 </f:Card>
+                           <f:Card
+                    id="_cardKPI"
+                    class="sapUiTinyMargin"
+                    width="20rem"
+                >
+                    <f:header>
+                        <card:Header
+                            xmlns:card="sap.f.cards"
+                            title="Upload KPI Dashboard"
+                            subtitle="Tổng quan GR + FI + PP"
+                            iconSrc="sap-icon://kpi-managing-my-area"
+                            iconDisplayShape="Square"
+                        />
+                    </f:header>
+                    <f:content>
+                        <VBox
+                            id="_kpiContent"
+                            class="sapUiSmallMargin"
+                        >
+                            <Text
+                                id="_kpiDesc"
+                                text="KPI hợp nhất: số lô theo trạng thái, tỷ lệ thành công/lỗi theo loại chứng từ, thời gian xử lý."
+                                class="sapUiTinyMarginBottom"
+                            />
+                            <Button
+                                id="btnKPI"
+                                text="Mở"
+                                type="Emphasized"
+                                press="onPressKpiRpt"
+                                icon="sap-icon://navigation-right-arrow"
+                                width="100%"
+                            />
+                        </VBox>
+                    </f:content>
+                </f:Card>
+
             </HBox>
 
             <Panel

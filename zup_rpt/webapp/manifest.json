@@ -17,7 +17,13 @@
           "annotations": [],
           "odataVersion": "4.0"
         }
-      }
+      },
+      "grService": {
+  "uri": "/sap/opu/odata4/sap/zmm_ui_pogr_o4/srvd/sap/zmm_ui_pogr_o4/0001/",
+  "type": "OData",
+  "settings": { "annotations": [], "odataVersion": "4.0" }
+}
+
     },
     "crossNavigation": {
       "inbounds": {
@@ -77,7 +83,18 @@
           "autoExpandSelect": true,
           "earlyRequests": true
         }
-      }
+      },
+      "gr": {
+  "dataSource": "grService",
+  "preload": false,
+  "settings": {
+    "synchronizationMode": "None",
+    "operationMode": "Server",
+    "autoExpandSelect": true,
+    "earlyRequests": false
+  }
+}
+
     },
     "routing": {
       "config": {
@@ -117,7 +134,13 @@
           "target": [
             "TargetGrRpt"
           ]
-        }
+        },
+        {
+  "name": "RouteKpiRpt",
+  "pattern": "kpirpt",
+  "target": ["TargetKpiRpt"]
+}
+
       ],
       "targets": {
         "TargetMain": {
@@ -143,7 +166,14 @@
           "transition": "slide",
           "viewId": "GrRpt",
           "viewName": "GrRpt"
-        }
+        },
+        "TargetKpiRpt": {
+  "viewType": "XML",
+  "transition": "slide",
+  "viewId": "KpiRpt",
+  "viewName": "KpiRpt"
+}
+
       }
     },
     "rootView": {

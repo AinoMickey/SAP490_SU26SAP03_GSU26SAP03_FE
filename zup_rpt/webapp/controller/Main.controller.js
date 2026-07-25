@@ -59,7 +59,12 @@ sap.ui.define(
             onPressGrRpt() {
                 this.getOwnerComponent().getRouter().navTo("RouteGrRpt");
             },
- 
+
+            onPressKpiRpt() {
+                this.getOwnerComponent().getRouter().navTo("RouteKpiRpt");
+            },
+
+
         });
     }
 );

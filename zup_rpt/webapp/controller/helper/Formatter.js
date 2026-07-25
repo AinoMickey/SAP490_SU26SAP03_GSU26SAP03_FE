@@ -54,5 +54,14 @@ sap.ui.define([], function () {
                 default: return "None";
             }
         },
+                uploadStatusToState: function (s) {
+            switch (s) {
+                case "S": return "Success";
+                case "E": return "Error";
+                case "P": return "Warning";
+                case "R": return "None";
+                default: return "None";
+            }
+        },
     };
 });
