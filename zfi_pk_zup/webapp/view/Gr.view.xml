@@ -5,54 +5,93 @@
     xmlns:u="sap.ui.unified"
     xmlns:core="sap.ui.core"
     xmlns:table="sap.ui.table"
-    displayBlock="true">
-
-    <Page id="grPage" title="Upload Phiếu Nhập Kho (GR)"
-        showNavButton="true" navButtonPress="onNavBack">
+    displayBlock="true"
+>
+    <Page
+        id="grPage"
+        title="Upload Phiếu Nhập Kho (GR)"
+        showNavButton="true"
+        navButtonPress="onNavBack"
+    >
         <content>
-            <IconTabBar id="idIconTabBarGr" expanded="true"
-                headerMode="Inline" stretchContentHeight="true">
+            <IconTabBar
+                id="idIconTabBarGr"
+                expanded="true"
+                headerMode="Inline"
+                stretchContentHeight="true"
+            >
                 <items>
                     <!-- ===== TAB UPLOAD ===== -->
-                    <IconTabFilter id="grUploadTab" key="upload"
-                        text="Upload" icon="sap-icon://upload"
-                        class="sapUiResponsiveContentPadding">
+                    <IconTabFilter
+                        id="grUploadTab"
+                        key="upload"
+                        text="Upload"
+                        icon="sap-icon://upload"
+                        class="sapUiResponsiveContentPadding"
+                    >
+                        <core:Fragment
+                            fragmentName="zfipkzup.view.fragment.Busy"
+                            type="XML"
+                        />
 
-                        <core:Fragment fragmentName="zfipkzup.view.fragment.Busy" type="XML" />
-
-                        <!-- Kết quả upload (summary — hiển thị sau khi gọi action) -->
-                        <Panel id="grResultPanel" visible="false"
-                            class="sapUiSmallMargin">
+                        <Panel
+                            id="grResultPanel"
+                            visible="false"
+                            class="sapUiSmallMargin"
+                        >
                             <content>
-                                <HBox class="sapUiSmallMargin" wrap="Wrap">
-                                    <ObjectStatus id="grResStatus"
+                                <HBox
+                                    id="_grResHBox"
+                                    class="sapUiSmallMargin"
+                                    wrap="Wrap"
+                                >
+                                    <ObjectStatus
+                                        id="grResStatus"
                                         text="{grResult>/statusText}"
                                         state="{grResult>/statusState}"
-                                        class="sapUiSmallMarginEnd" />
-                                    <ObjectNumber id="grResTotal"
+                                        class="sapUiSmallMarginEnd"
+                                    />
+                                    <ObjectNumber
+                                        id="grResTotal"
                                         number="{grResult>/total_count}"
-                                        unit="dòng" class="sapUiSmallMarginEnd" />
-                                    <ObjectStatus id="grResSuccess"
+                                        unit="dòng"
+                                        class="sapUiSmallMarginEnd"
+                                    />
+                                    <ObjectStatus
+                                        id="grResSuccess"
                                         text="Thành công: {grResult>/success_count}"
-                                        state="Success" class="sapUiSmallMarginEnd" />
-                                    <ObjectStatus id="grResError"
+                                        state="Success"
+                                        class="sapUiSmallMarginEnd"
+                                    />
+                                    <ObjectStatus
+                                        id="grResError"
                                         text="Lỗi: {grResult>/error_count}"
-                                        state="Error" />
+                                        state="Error"
+                                    />
                                 </HBox>
-                                <Text id="grResMessage" text="{grResult>/message}"
-                                    class="sapUiSmallMargin" />
+                                <Text
+                                    id="grResMessage"
+                                    text="{grResult>/message}"
+                                    class="sapUiSmallMargin"
+                                />
                             </content>
                         </Panel>
 
-                        <table:Table id="grTableUpload"
+                        <table:Table
+                            id="grTableUpload"
                             selectionMode="None"
                             visibleRowCountMode="Interactive"
-                            rows="{grModel>/items}">
+                            rows="{grModel>/items}"
+                        >
                             <table:extension>
                                 <OverflowToolbar id="grToolbar">
-                                    <Title id="grTitle" text="Dòng dữ liệu GR" />
+                                    <Title
+                                        id="grTitle"
+                                        text="Dòng dữ liệu GR"
+                                    />
                                     <ToolbarSeparator id="_grSep1" />
-                                    <u:FileUploader id="grFileUploader"
+                                    <u:FileUploader
+                                        id="grFileUploader"
                                         name="grFileUpload"
                                         width="400px"
                                         fileType="xls,xlsx"
@@ -60,79 +99,180 @@
                                         useMultipart="false"
                                         change="onFileChange"
                                         class="sapUiTinyMarginEnd"
-                                        buttonText="Chọn tài liệu..." />
+                                        buttonText="Chọn tài liệu..."
+                                    />
                                     <ToolbarSeparator id="_grSep2" />
-                                    <Button id="_grBtnDl" text="Tải Template"
+                                    <Button
+                                        id="_grBtnDl"
+                                        text="Tải Template"
                                         icon="sap-icon://download-from-cloud"
-                                        press="onDownloadTemplate" type="Attention" />
+                                        press="onDownloadTemplate"
+                                        type="Attention"
+                                    />
                                     <ToolbarSpacer id="_grSpacer" />
-                                    <Button id="grCheckButton" text="Check"
+                                    <Button
+                                        id="grCheckButton"
+                                        text="Check"
                                         icon="sap-icon://checklist"
-                                        press="onCheck" enabled="false"
-                                        type="Neutral" class="sapUiTinyMarginEnd" />
-                                    <Button id="grPostButton" text="Upload GR"
+                                        press="onCheck"
+                                        enabled="false"
+                                        type="Neutral"
+                                        class="sapUiTinyMarginEnd"
+                                    />
+                                    <Button
+                                        id="grPostButton"
+                                        text="Upload GR"
                                         icon="sap-icon://post"
-                                        press="onPost" enabled="false"
-                                        type="Success" class="sapUiTinyMarginEnd" />
-                                    <Button id="grBtnClear" text="Clear"
+                                        press="onPost"
+                                        enabled="false"
+                                        type="Success"
+                                        class="sapUiTinyMarginEnd"
+                                    />
+                                    <Button
+                                        id="grBtnClear"
+                                        text="Clear"
                                         icon="sap-icon://clear-all"
                                         press="onClearUpload"
-                                        type="Transparent" />
+                                        type="Transparent"
+                                    />
                                 </OverflowToolbar>
                             </table:extension>
                             <table:noData>
-                                <IllustratedMessage id="_grNoData"
+                                <IllustratedMessage
+                                    id="_grNoData"
                                     enableVerticalResponsiveness="true"
                                     title="Chưa có dữ liệu"
-                                    description="Tải Template, điền PO GR rồi chọn file để upload" />
+                                    description="Tải Template, điền PO GR rồi chọn file để upload"
+                                />
                             </table:noData>
                             <table:columns>
-                                <table:Column id="grColGrNum" width="10rem">
-                                    <Label id="_gL1" text="GR Number" />
+                                <table:Column
+                                    id="grColGrNum"
+                                    width="10rem"
+                                >
+                                    <Label
+                                        id="_gL1"
+                                        text="GR Number"
+                                    />
                                     <table:template>
-                                        <Text id="_gT1" text="{grModel>gr_number}" wrapping="false" />
+                                        <Text
+                                            id="_gT1"
+                                            text="{grModel>gr_number}"
+                                            wrapping="false"
+                                        />
                                     </table:template>
                                 </table:Column>
-                                <table:Column id="grColDocDate" width="9rem">
-                                    <Label id="_gL2" text="Document Date" />
+                                <table:Column
+                                    id="grColDocDate"
+                                    width="9rem"
+                                >
+                                    <Label
+                                        id="_gL2"
+                                        text="Document Date"
+                                    />
                                     <table:template>
-                                        <Text id="_gT2" text="{grModel>document_date}" wrapping="false" />
+                                        <Text
+                                            id="_gT2"
+                                            text="{grModel>document_date}"
+                                            wrapping="false"
+                                        />
                                     </table:template>
                                 </table:Column>
-                                <table:Column id="grColMvt" width="7rem">
-                                    <Label id="_gL3" text="Mvt Type" />
+                                <table:Column
+                                    id="grColMvt"
+                                    width="7rem"
+                                >
+                                    <Label
+                                        id="_gL3"
+                                        text="Mvt Type"
+                                    />
                                     <table:template>
-                                        <Text id="_gT3" text="{grModel>movement_type}" wrapping="false" />
+                                        <Text
+                                            id="_gT3"
+                                            text="{grModel>movement_type}"
+                                            wrapping="false"
+                                        />
                                     </table:template>
                                 </table:Column>
-                                <table:Column id="grColPo" width="11rem">
-                                    <Label id="_gL4" text="PO Number" />
+                                <table:Column
+                                    id="grColPo"
+                                    width="11rem"
+                                >
+                                    <Label
+                                        id="_gL4"
+                                        text="PO Number"
+                                    />
                                     <table:template>
-                                        <Text id="_gT4" text="{grModel>po_number}" wrapping="false" />
+                                        <Text
+                                            id="_gT4"
+                                            text="{grModel>po_number}"
+                                            wrapping="false"
+                                        />
                                     </table:template>
                                 </table:Column>
-                                <table:Column id="grColPoItem" width="7rem">
-                                    <Label id="_gL5" text="PO Item" />
+                                <table:Column
+                                    id="grColPoItem"
+                                    width="7rem"
+                                >
+                                    <Label
+                                        id="_gL5"
+                                        text="PO Item"
+                                    />
                                     <table:template>
-                                        <Text id="_gT5" text="{grModel>po_item}" wrapping="false" />
+                                        <Text
+                                            id="_gT5"
+                                            text="{grModel>po_item}"
+                                            wrapping="false"
+                                        />
                                     </table:template>
                                 </table:Column>
-                                <table:Column id="grColQty" width="7rem" hAlign="End">
-                                    <Label id="_gL6" text="Receive Qty" />
+                                <table:Column
+                                    id="grColQty"
+                                    width="7rem"
+                                    hAlign="End"
+                                >
+                                    <Label
+                                        id="_gL6"
+                                        text="Receive Qty"
+                                    />
                                     <table:template>
-                                        <Text id="_gT6" text="{grModel>receive_qty}" wrapping="false" />
+                                        <Text
+                                            id="_gT6"
+                                            text="{grModel>receive_qty}"
+                                            wrapping="false"
+                                        />
                                     </table:template>
                                 </table:Column>
-                                <table:Column id="grColUnit" width="6rem">
-                                    <Label id="_gL7" text="Unit" />
+                                <table:Column
+                                    id="grColUnit"
+                                    width="6rem"
+                                >
+                                    <Label
+                                        id="_gL7"
+                                        text="Unit"
+                                    />
                                     <table:template>
-                                        <Text id="_gT7" text="{grModel>unit}" wrapping="false" />
+                                        <Text
+                                            id="_gT7"
+                                            text="{grModel>unit}"
+                                            wrapping="false"
+                                        />
                                     </table:template>
                                 </table:Column>
-                                <table:Column id="grColSloc" width="9rem">
-                                    <Label id="_gL8" text="Stor. Location" />
+                                <table:Column
+                                    id="grColSloc"
+                                    width="9rem"
+                                >
+                                    <Label
+                                        id="_gL8"
+                                        text="Stor. Location"
+                                    />
                                     <table:template>
-                                        <Text id="_gT8" text="{grModel>storage_location}" wrapping="false" />
+                                        <Text
+                                            id="_gT8"
+                                            text="{grModel>storage_location}"
+                                            wrapping="false"
+                                        />
                                     </table:template>
                                 </table:Column>
                             </table:columns>
@@ -142,9 +282,83 @@
                     <IconTabSeparator id="_grTabSep" />
 
                     <!-- ===== TAB HISTORY — GrUpload entity set ===== -->
-                    <IconTabFilter id="grHistoryTab" key="history"
-                        text="Lịch sử GR" icon="sap-icon://history">
-                        <Table id="grHistoryTable"
+                    <IconTabFilter
+                        id="grHistoryTab"
+                        key="history"
+                        text="Lịch sử GR"
+                        icon="sap-icon://history"
+                    >
+                        <Toolbar
+                            id="_grFilterTb"
+                            class="sapUiTinyMarginBottom"
+                        >
+                            <Label
+                                id="_grFilterLbl1"
+                                text="Trạng thái:"
+                                class="sapUiTinyMarginEnd"
+                            />
+                            <Select
+                                id="grFilterStatus"
+                                width="9rem"
+                                class="sapUiTinyMarginEnd"
+                            >
+                                <core:Item
+                                    id="_gfi1"
+                                    key=""
+                                    text="Tất cả"
+                                />
+                                <core:Item
+                                    id="_gfi2"
+                                    key="S"
+                                    text="Thành công"
+                                />
+                                <core:Item
+                                    id="_gfi3"
+                                    key="E"
+                                    text="Lỗi"
+                                />
+                                <core:Item
+                                    id="_gfi4"
+                                    key="R"
+                                    text="Đang xử lý"
+                                />
+                            </Select>
+                            <SearchField
+                                id="grFilterSearch"
+                                width="12rem"
+                                placeholder="Tìm GR Number..."
+                                class="sapUiTinyMarginEnd"
+                                search="onApplyHistoryFilter"
+                            />
+                            <ToolbarSpacer id="_grFilterSpacer1" />
+                            <Label
+                                id="_grFilterLbl2"
+                                text="Hiện cả lịch sử Check:"
+                                class="sapUiTinyMarginEnd"
+                            />
+                            <Switch
+                                id="grFilterShowCheck"
+                                state="false"
+                                change="onApplyHistoryFilter"
+                                class="sapUiTinyMarginEnd"
+                            />
+                            <Button
+                                id="_grFilterBtn"
+                                text="Lọc"
+                                icon="sap-icon://filter"
+                                press="onApplyHistoryFilter"
+                                class="sapUiTinyMarginEnd"
+                            />
+                            <Button
+                                id="_grFilterResetBtn"
+                                text="Xóa lọc"
+                                press="onResetHistoryFilter"
+                                type="Transparent"
+                            />
+                        </Toolbar>
+
+                        <Table
+                            id="grHistoryTable"
                             inset="false"
                             growing="true"
                             growingThreshold="50"
@@ -152,35 +366,131 @@
                             items="{
                                 path: 'gr>/GrUpload',
                                 parameters: { '$orderby': 'CreatedAt desc' }
-                            }">
+                            }"
+                        >
                             <headerToolbar>
                                 <OverflowToolbar id="_grHistTb">
-                                    <Title id="_grHistTitle" text="Phiếu GR Đã Upload" />
+                                    <Title
+                                        id="_grHistTitle"
+                                        text="Phiếu GR Đã Upload"
+                                    />
+                                    <Text
+                                        id="_grHistLegend"
+                                        text="  (R = đang xử lý · S = thành công · E = lỗi)"
+                                        class="sapUiTinyMarginBegin"
+                                    />
                                     <ToolbarSpacer id="_grHistSpacer" />
-                                    <Button id="_grHistRefresh"
+                                    <Button
+                                        id="_grHistRefresh"
                                         icon="sap-icon://refresh"
-                                        press="onRefreshHistory" />
+                                        tooltip="Refresh"
+                                        press="onRefreshHistory"
+                                    />
                                 </OverflowToolbar>
                             </headerToolbar>
                             <columns>
-                                <Column id="_grhc1"><Text id="_grht1" text="GR Number" /></Column>
-                                <Column id="_grhc2"><Text id="_grht2" text="Status" /></Column>
-                                <Column id="_grhc3"><Text id="_grht3" text="Mat. Doc" /></Column>
-                                <Column id="_grhc4"><Text id="_grht4" text="Message" /></Column>
-                                <Column id="_grhc5"><Text id="_grht5" text="Created By" /></Column>
+                                <Column id="_grhc1">
+                                    <Text
+                                        id="_grht1"
+                                        text="GR Number"
+                                    />
+                                </Column>
+                                <Column id="_grhc9">
+                                    <Text
+                                        id="_grht9"
+                                        text="Loại"
+                                    />
+                                </Column>
+                                <Column id="_grhc2">
+                                    <Text
+                                        id="_grht2"
+                                        text="Status"
+                                    />
+                                </Column>
+                                <Column id="_grhc3">
+                                    <Text
+                                        id="_grht3"
+                                        text="Mat. Doc"
+                                    />
+                                </Column>
+                                <Column id="_grhc4">
+                                    <Text
+                                        id="_grht4"
+                                        text="Message"
+                                    />
+                                </Column>
+                                <Column id="_grhc5">
+                                    <Text
+                                        id="_grht5"
+                                        text="Created By"
+                                    />
+                                </Column>
+                                <Column id="_grhc6">
+                                    <Text
+                                        id="_grht6"
+                                        text="Cập nhật lúc"
+                                    />
+                                </Column>
+                                <Column id="_grhc7">
+                                    <Text
+                                        id="_grht7"
+                                        text=""
+                                    />
+                                </Column>
                             </columns>
                             <items>
                                 <ColumnListItem id="_grhcli">
                                     <cells>
-                                        <Text id="_grhcell1" text="{gr>GrNumber}" />
-                                        <ObjectStatus id="_grhcell2"
+                                        <Text
+                                            id="_grhcell1"
+                                            text="{gr>GrNumber}"
+                                        />
+                                        <ObjectStatus
+                                            id="_grhcellType"
+                                            text="{= ${gr>Testmode} === true ? 'Check' : 'Post' }"
+                                            state="{= ${gr>Testmode} === true ? 'None' : 'Information' }"
+                                        />
+                                        <ObjectStatus
+                                            id="_grhcell2"
                                             text="{gr>Status}"
                                             state="{= ${gr>StatusCriticality} === 3 ? 'Success'
                                                     : ${gr>StatusCriticality} === 1 ? 'Error'
-                                                    : 'None' }" />
-                                        <Text id="_grhcell3" text="{gr>MaterialDocument}" />
-                                        <Text id="_grhcell4" text="{gr>Message}" />
-                                        <Text id="_grhcell5" text="{gr>CreatedBy}" />
+                                                    : 'Warning' }"
+                                        />
+                                        <Text
+                                            id="_grhcell3"
+                                            text="{gr>MaterialDocument}"
+                                        />
+                                        <Text
+                                            id="_grhcell4"
+                                            text="{gr>Message}"
+                                        />
+                                        <Text
+                                            id="_grhcell5"
+                                            text="{gr>CreatedBy}"
+                                        />
+                                        <Text
+                                            id="_grhcell6"
+                                            text="{gr>LastChangedAt}"
+                                        />
+                                        <HBox id="_grhcellActions">
+                                            <Button
+                                                id="_grhBtnRetry"
+                                                icon="sap-icon://redo"
+                                                tooltip="Retry (chỉ khi Lỗi)"
+                                                press="onRetry"
+                                                visible="{= ${gr>Status} === 'E' }"
+                                                type="Emphasized"
+                                                class="sapUiTinyMarginEnd"
+                                            />
+                                            <Button
+                                                id="_grhBtnDetail"
+                                                icon="sap-icon://detail-view"
+                                                tooltip="Xem chi tiết item"
+                                                press="onShowItems"
+                                                type="Transparent"
+                                            />
+                                        </HBox>
                                     </cells>
                                 </ColumnListItem>
                             </items>

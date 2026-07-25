@@ -1,0 +1,43 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+    <Dialog id="grItemDetailDialog"
+        title="Chi tiết Item — GR {itemDialog>/grNumber}"
+        contentWidth="50rem">
+        <content>
+            <Table id="grItemDetailTable" items="{gr>/GrItem}" noDataText="Không có item nào">
+                <columns>
+                    <Column id="_gidc1"><Text id="_gidt1" text="Item" /></Column>
+                    <Column id="_gidc2"><Text id="_gidt2" text="PO Number" /></Column>
+                    <Column id="_gidc3"><Text id="_gidt3" text="PO Item" /></Column>
+                    <Column id="_gidc4"><Text id="_gidt4" text="Material" /></Column>
+                    <Column id="_gidc5"><Text id="_gidt5" text="Plant" /></Column>
+                    <Column id="_gidc6" hAlign="End"><Text id="_gidt6" text="Receive Qty" /></Column>
+                    <Column id="_gidc7"><Text id="_gidt7" text="Unit" /></Column>
+                    <Column id="_gidc8"><Text id="_gidt8" text="Status" /></Column>
+                    <Column id="_gidc9"><Text id="_gidt9" text="Message" /></Column>
+                </columns>
+                <items>
+                    <ColumnListItem id="_giditem">
+                        <cells>
+                            <Text id="_gidcell1" text="{gr>Item}" />
+                            <Text id="_gidcell2" text="{gr>PoNumber}" />
+                            <Text id="_gidcell3" text="{gr>PoItem}" />
+                            <Text id="_gidcell4" text="{gr>Material}" />
+                            <Text id="_gidcell5" text="{gr>Plant}" />
+                            <Text id="_gidcell6" text="{gr>ReceiveQty}" />
+                            <Text id="_gidcell7" text="{gr>Unit}" />
+                            <ObjectStatus id="_gidcell8" text="{gr>Status}"
+                                state="{= ${gr>StatusCriticality} === 3 ? 'Success'
+                                        : ${gr>StatusCriticality} === 1 ? 'Error' : 'None' }" />
+                            <Text id="_gidcell9" text="{gr>Message}" />
+                        </cells>
+                    </ColumnListItem>
+                </items>
+            </Table>
+        </content>
+        <beginButton>
+            <Button id="_gidCloseBtn" text="Đóng" press=".onCloseItemDialog" />
+        </beginButton>
+    </Dialog>
+</core:FragmentDefinition>

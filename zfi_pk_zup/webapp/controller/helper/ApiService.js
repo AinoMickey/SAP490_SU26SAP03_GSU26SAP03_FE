@@ -293,12 +293,13 @@ sap.ui.define(
                         ponumber: _str(row.po_number),
                         poitem: _str(row.po_item),
                         quantity: _str(row.receive_qty),
-                        unit: _str(row.unit),
+                        baseunit: _str(row.unit),
                         storagelocation: _str(row.storage_location),
                     });
                 });
                 return Array.from(mGr.values());
             },
+
 
             callActionUploadGR: async function (oModel, sFileName, bTestMode, aDocs) {
                 const ACTION_FQN_GR =

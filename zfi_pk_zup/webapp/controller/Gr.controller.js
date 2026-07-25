@@ -4,27 +4,37 @@ sap.ui.define(
         "sap/m/MessageToast",
         "sap/ui/model/json/JSONModel",
         "sap/m/MessageBox",
+        "sap/ui/model/Filter",
+        "sap/ui/model/FilterOperator",
+        "./helper/GrExcelTemplate",
         "./helper/ExcelParser",
         "./helper/ApiService",
         "./xlsx/xlsx.bundle",
     ],
-    function (Controller, MessageToast, JSONModel, MessageBox,
-              ExcelParser, ApiService) {
+    function (Controller, MessageToast, JSONModel, MessageBox, Filter, FilterOperator,
+              GrExcelTemplate, ExcelParser, ApiService) {
         "use strict";
 
         const UPLOAD_MODEL = "grModel";
         const POST_BTN_ID  = "grPostButton";
         const CHECK_BTN_ID = "grCheckButton";
+        const ACTION_FQN_RETRY = "com.sap.gateway.srvd.zmm_ui_pogr_o4.v0001.retryPost";
+        const POLL_INTERVAL_MS = 5000;
 
         return Controller.extend("zfipkzup.controller.Gr", {
             dataUpload: [],
+            _sFileName: "",
+            _pollingId: null,
 
             onInit() {
                 this.getView().setModel(new JSONModel({ items: [] }), UPLOAD_MODEL);
                 this.getView().setModel(new JSONModel({}), "grResult");
+                this._startPolling();
+                this.onApplyHistoryFilter();
             },
 
             onExit() {
+                this._stopPolling();
                 this._destroyBusy();
             },
 
@@ -37,9 +47,7 @@ sap.ui.define(
             },
 
             onDownloadTemplate() {
-                // Tạo template đơn giản — xem GrExcelTemplate.js nếu có
-                MessageToast.show("Tải template GR...");
-                // TODO: tạo helper/GrExcelTemplate.js tương tự PpExcelTemplate.js
+                GrExcelTemplate.download();
             },
 
             // ── Upload / Parse ──
@@ -50,6 +58,7 @@ sap.ui.define(
 
                 if (!oFile) { this._refreshTable(); return; }
 
+                this._sFileName = oFile.name || "";
                 this.dataUpload = [];
                 oModel.setProperty("/items", []);
                 this._showBusy();
@@ -63,14 +72,14 @@ sap.ui.define(
                         defval: ""
                     });
 
-                    if (!excelData || excelData.length <= 1) {
+                    if (!excelData || excelData.length === 0) {
                         MessageToast.show("File rỗng hoặc thiếu dữ liệu!");
                         this._refreshTable();
                         return;
                     }
 
                     // Dòng 0 là header label template — bỏ qua
-                    delete excelData[0];
+                    excelData.shift();
 
                     const result = this._processRows(excelData);
                     this.dataUpload = result.data;
@@ -93,6 +102,7 @@ sap.ui.define(
                     this.byId(CHECK_BTN_ID).setEnabled(false);
                 } finally {
                     this._closeBusy();
+                    this.byId("grFileUploader")?.clear();
                 }
             },
 
@@ -102,7 +112,6 @@ sap.ui.define(
 
                 excelData.forEach((raw) => {
                     if (!raw) return;
-                    // Bỏ dòng trống (không có PO_NUMBER và GR_NUMBER)
                     if (!_key(raw, "po_number") && !_key(raw, "gr_number")) return;
 
                     aData.push({
@@ -147,24 +156,30 @@ sap.ui.define(
                         aDocs
                     );
 
-                    // Result [1] summary — hiển thị Panel
+                    // QUAN TRỌNG: oResult.status ở đây là kết quả VALIDATE/DRY-RUN (đồng bộ),
+                    // KHÔNG phải kết quả post GR thật (post thật chạy ở job nền, bất đồng bộ).
                     const oResultModel = this.getView().getModel("grResult");
-                    oResultModel.setData({
-                        ...oResult,
-                        statusText: oResult.status === "S" ? "Thành công" :
-                                    oResult.status === "E" ? "Lỗi"        : "Đang xử lý",
-                        statusState: oResult.status === "S" ? "Success" :
-                                     oResult.status === "E" ? "Error"   : "Warning",
-                    });
+                    if (bTestMode) {
+                        oResultModel.setData({
+                            ...oResult,
+                            statusText: oResult.status === "S" ? "Hợp lệ" :
+                                        oResult.status === "E" ? "Lỗi" : "Đang xử lý",
+                            statusState: oResult.status === "S" ? "Success" :
+                                         oResult.status === "E" ? "Error" : "Warning",
+                        });
+                    } else {
+                        oResultModel.setData({
+                            ...oResult,
+                            statusText: oResult.status === "E" ? "Lỗi" : "Đang xử lý",
+                            statusState: oResult.status === "E" ? "Error" : "Warning",
+                        });
+                    }
                     this.byId("grResultPanel").setVisible(true);
 
                     if (bTestMode) {
-                        MessageToast.show("Check xong — xem kết quả ở trên");
+                        MessageToast.show("Check hoàn tất.");
                     } else {
-                        MessageToast.show(
-                            "Đã gửi " + (oResult.total_count || 0) +
-                            " GR. Xem tab Lịch sử để theo dõi trạng thái."
-                        );
+                        MessageToast.show("Đã gửi " + (oResult.total_count || 0) + " GR, đang xử lý.");
                         this.onRefreshHistory();
                     }
                 } catch (err) {
@@ -175,7 +190,7 @@ sap.ui.define(
             },
 
             getCurrentFileName() {
-                return this.byId("grFileUploader").getValue() || "";
+                return this._sFileName || "";
             },
 
             onClearUpload() {
@@ -185,9 +200,96 @@ sap.ui.define(
             },
 
             onRefreshHistory() {
-                const oTable = this.byId("grHistoryTable");
-                const oBinding = oTable?.getBinding("items");
+                const oBinding = this.byId("grHistoryTable")?.getBinding("items");
                 if (oBinding) oBinding.refresh();
+            },
+
+            // ── Auto-poll khi còn GR đang ở trạng thái R (đang xử lý nền) ──
+            _startPolling() {
+                if (this._pollingId) return;
+                this._pollingId = setInterval(() => {
+                    const oBinding = this.byId("grHistoryTable")?.getBinding("items");
+                    if (!oBinding || !oBinding.getCurrentContexts) return;
+                    const aContexts = oBinding.getCurrentContexts();
+                    const bHasPending = aContexts.some(
+                        (c) => c && c.getProperty && c.getProperty("Status") === "R"
+                    );
+                    if (bHasPending) oBinding.refresh();
+                }, POLL_INTERVAL_MS);
+            },
+            _stopPolling() {
+                if (this._pollingId) {
+                    clearInterval(this._pollingId);
+                    this._pollingId = null;
+                }
+            },
+
+            // ── Filter Lịch sử ──
+            onApplyHistoryFilter() {
+                const aFilters = [];
+                const sStatus = this.byId("grFilterStatus").getSelectedKey();
+                const sSearch = this.byId("grFilterSearch").getValue();
+                const bShowCheck = this.byId("grFilterShowCheck").getState();
+
+                if (sStatus) aFilters.push(new Filter("Status", FilterOperator.EQ, sStatus));
+                if (sSearch) aFilters.push(new Filter("GrNumber", FilterOperator.Contains, sSearch));
+                if (!bShowCheck) aFilters.push(new Filter("Testmode", FilterOperator.EQ, false));
+
+                const oBinding = this.byId("grHistoryTable").getBinding("items");
+                if (oBinding) oBinding.filter(aFilters);
+            },
+            onResetHistoryFilter() {
+                this.byId("grFilterStatus").setSelectedKey("");
+                this.byId("grFilterSearch").setValue("");
+                this.byId("grFilterShowCheck").setState(false);
+                this.onApplyHistoryFilter();
+            },
+
+            // ── Retry (chỉ khi Status = E) ──
+            onRetry: async function (oEvent) {
+                const oContext = oEvent.getSource().getBindingContext("gr");
+                if (!oContext) return;
+                this._showBusy();
+                try {
+                    const oOperation = oContext.getModel().bindContext(
+                        ACTION_FQN_RETRY + "(...)", oContext
+                    );
+                    await oOperation.execute();
+                    MessageToast.show("Đã gửi lại — đang xử lý nền, chờ vài giây rồi xem Lịch sử");
+                    this.onRefreshHistory();
+                } catch (err) {
+                    MessageBox.error(err?.message || "Lỗi khi Retry.");
+                } finally {
+                    this._closeBusy();
+                }
+            },
+
+            // ── Xem chi tiết item của 1 GR ──
+            onShowItems: async function (oEvent) {
+                const oContext = oEvent.getSource().getBindingContext("gr");
+                if (!oContext) return;
+                const sGrNumber = oContext.getProperty("GrNumber");
+
+                if (!this._oItemDialog) {
+                    this._oItemDialog = await this.loadFragment({
+                        name: "zfipkzup.view.fragment.GrItemDetail"
+                    });
+                }
+                this._oItemDialog.setModel(new JSONModel({ grNumber: sGrNumber }), "itemDialog");
+
+                const oTable = sap.ui.core.Fragment.byId(this._oItemDialog.getId(), "grItemDetailTable")
+                    || this._oItemDialog.getContent()[0]; // fallback nếu id khác
+                const oItemBinding = (this._oItemDialog.byId
+                    ? this._oItemDialog.byId("grItemDetailTable")
+                    : oTable)?.getBinding("items");
+                if (oItemBinding) {
+                    oItemBinding.filter([new Filter("GrNumber", FilterOperator.EQ, sGrNumber)]);
+                }
+
+                this._oItemDialog.open();
+            },
+            onCloseItemDialog() {
+                this._oItemDialog?.close();
             },
 
             // ── UI Utilities ──
@@ -200,6 +302,7 @@ sap.ui.define(
             _refreshTable() {
                 this.getView().getModel(UPLOAD_MODEL).setProperty("/items", []);
                 this.dataUpload = [];
+                this._sFileName = "";
                 this.byId(POST_BTN_ID).setEnabled(false);
                 this.byId(CHECK_BTN_ID).setEnabled(false);
                 this.byId("grFileUploader")?.clear();
