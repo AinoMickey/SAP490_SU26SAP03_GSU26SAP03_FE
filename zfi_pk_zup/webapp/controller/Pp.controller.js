@@ -86,42 +86,86 @@ sap.ui.define(
         this._showBusy();
 
         try {
+          // (giữ nguyên nếu anh đã thêm) check trùng file
           await ApiService.checkFileExistsPP(this._getPpModel(), oFile.name);
+
           const fileContent = await ExcelParser.readFile(oFile);
           const workbook = XLSX.read(fileContent, { type: "binary" });
           const oSheet =
             workbook.Sheets["Data"] || workbook.Sheets[workbook.SheetNames[0]];
           const excelData = XLSX.utils.sheet_to_row_object_array(oSheet);
 
-          if (!excelData || excelData.length <= 1) {
-            MessageToast.show("Lỗi định dạng dữ liệu hoặc file rỗng!");
+          // ══════════ KHỐI MỚI 1: nạp validator + check template ══════════
+          const UploadValidator = await new Promise((res) =>
+            sap.ui.require(["zfipkzup/controller/helper/UploadValidator"], res),
+          );
+          const ErrorDialog = await new Promise((res) =>
+            sap.ui.require(["zfipkzup/controller/helper/ErrorDialog"], res),
+          );
+
+          const aHeader =
+            XLSX.utils.sheet_to_json(oSheet, { header: 1 })[0] || [];
+          const oTpl = UploadValidator.checkTemplate(aHeader, "PP");
+          if (!oTpl.ok) {
+            ErrorDialog.handleErrorDialog(
+              [
+                {
+                  type: "Error",
+                  title: "File không đúng template PP",
+                  description:
+                    "Thiếu cột: " +
+                    oTpl.missing.join(", ") +
+                    ". Vui lòng tải Template mới và điền lại.",
+                },
+              ],
+              this,
+            );
             this._refreshTable();
             return;
           }
 
-          // Row đầu là dòng label tiếng Việt của template, bỏ qua
-          delete excelData[0];
+          // ══════════ KHỐI MỚI 2: bóc label an toàn (THAY delete excelData[0]) ══════════
+          const oStrip = UploadValidator.stripLabelRow(excelData);
+          const aPrepared = UploadValidator.prepareRows(
+            oStrip.rows,
+            oStrip.startRow,
+          );
 
-          const result = this._processRows(excelData);
+          // check file rỗng CHUYỂN XUỐNG ĐÂY (check length<=1 cũ bỏ đi,
+          // vì user xóa label row thì file 1 dòng data vẫn hợp lệ)
+          if (aPrepared.length === 0) {
+            MessageToast.show("File không có dòng dữ liệu!");
+            this._refreshTable();
+            return;
+          }
+
+          // ══════════ KHỐI MỚI 3: chặn syntax ══════════
+          const aSynErrors = UploadValidator.validatePP(aPrepared);
+          if (aSynErrors.length > 0) {
+            ErrorDialog.handleErrorDialog(
+              aSynErrors.map((e) => ({
+                type: "Error",
+                title: `Dòng Excel ${e.excelRow} - cột ${e.field}`,
+                description: e.message,
+              })),
+              this,
+            );
+            this._refreshTable();
+            return;
+          }
+
+          // ══════════ TỪ ĐÂY GIỮ NGUYÊN FLOW CŨ, chỉ đổi nguồn data ══════════
+          const result = this._processRows([null].concat(oStrip.rows));
           this.dataUpload = result.data;
           oModel.setProperty("/items", this.dataUpload);
           this._autoSizeColumns(this.dataUpload);
 
-          if (this.dataUpload.length === 0) {
-            MessageToast.show("File không có dòng dữ liệu hợp lệ!");
-            this.byId(POST_BTN_ID).setEnabled(false);
-            this.byId(CHECK_BTN_ID).setEnabled(false);
-            return;
-          }
-
+          // (các khối if result.invalidRows / MessageToast / enable nút... giữ nguyên)
           if (result.invalidRows.length > 0) {
             MessageBox.error(
               "Sai định dạng ngày (DD/MM/YYYY) ở " +
                 result.invalidRows.length +
-                " dòng [vd: dòng Excel " +
-                result.invalidRows.slice(0, 5).join(", ") +
-                (result.invalidRows.length > 5 ? "..." : "") +
-                "]. Vui lòng sửa file và upload lại.",
+                " dòng...",
             );
             this.byId(POST_BTN_ID).setEnabled(false);
             this.byId(CHECK_BTN_ID).setEnabled(false);

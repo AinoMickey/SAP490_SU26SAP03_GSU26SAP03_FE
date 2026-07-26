@@ -161,7 +161,7 @@ sap.ui.define(
                         unit: _key(raw, "unit"),
                         storage_location: _key(raw, "storage_location"),
                     };
-                    const bOk = !!(oRow.po_number && oRow.po_item && oRow.receive_qty && oRow.unit && oRow.storage_location);
+                    const bOk = !!(oRow.document_date && oRow.po_number && oRow.po_item && oRow.receive_qty && oRow.unit && oRow.storage_location);
                     oRow.ValidationStatus = bOk ? "S" : "E";
                     oRow.ValidationMessage = bOk ? "" : "Thiếu PO Number/PO Item/Receive Qty/Unit/Storage Location";
                     aData.push(oRow);

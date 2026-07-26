@@ -132,8 +132,9 @@ sap.ui.define(
       // ── Upload ──
 
       onFileChange: async function (oEvent) {
-        const oFile = oEvent.getParameter("files")[0];
-        const oModel = this.getView().getModel(UPLOAD_TABLE_MODEL);
+        const oFile =
+          oEvent.getParameter("files") && oEvent.getParameter("files")[0];
+        const oModel = this.getView().getModel(UPLOAD_MODEL); // tên model FI của anh
 
         if (!oFile) {
           this._refreshTable();
@@ -145,46 +146,93 @@ sap.ui.define(
         this._showBusy();
 
         try {
-          await ApiService.checkFileExists(this._getODataModel(), oFile.name);
+          // check trùng filename (FI có sẵn từ đầu) - GIỮ NGUYÊN
+          await ApiService.checkFileExists(
+            this.getView().getModel(),
+            oFile.name,
+          );
 
           const fileContent = await ExcelParser.readFile(oFile);
           const workbook = XLSX.read(fileContent, { type: "binary" });
-          const excelData = XLSX.utils.sheet_to_row_object_array(
-            workbook.Sheets["Data"],
+          const oSheet =
+            workbook.Sheets["Data"] || workbook.Sheets[workbook.SheetNames[0]];
+          const excelData = XLSX.utils.sheet_to_row_object_array(oSheet);
+
+          // ══════════ MỚI 1: nạp validator + check template FI ══════════
+          const UploadValidator = await new Promise((res) =>
+            sap.ui.require(["zfipkzup/controller/helper/UploadValidator"], res),
           );
 
-          if (excelData.length <= 1) {
-            MessageToast.show("Lỗi định dạng dữ liệu hoặc file rỗng!");
+          const aHeader =
+            XLSX.utils.sheet_to_json(oSheet, { header: 1 })[0] || [];
+          const oTpl = UploadValidator.checkTemplate(aHeader, "FI");
+          if (!oTpl.ok) {
+            ErrorDialog.handleErrorDialog(
+              [
+                {
+                  type: "Error",
+                  title: "File không đúng template FI",
+                  description:
+                    "Thiếu cột: " +
+                    oTpl.missing.join(", ") +
+                    ". Vui lòng tải Template mới và điền lại.",
+                },
+              ],
+              this,
+            );
             this._refreshTable();
             return;
           }
 
-          const result = ExcelParser.processExcelData(excelData);
+          // ══════════ MỚI 2: bóc label an toàn (THAY dòng delete excelData[0]) ══════════
+          const oStrip = UploadValidator.stripLabelRow(excelData);
+          const aPrepared = UploadValidator.prepareRows(
+            oStrip.rows,
+            oStrip.startRow,
+          );
 
-          if (result.errors.length > 0) {
-            this.byId(POST_BTN_ID).setEnabled(false);
-            this.byId(CHECK_BTN_ID).setEnabled(false);
-            ErrorDialog.handleErrorDialog(result.errors, this);
-          } else {
-            this.dataUpload = result.data;
-            oModel.setProperty("/items", this.dataUpload);
-            MessageToast.show("Upload Successful");
-            this.byId(POST_BTN_ID).setEnabled(true);
-            this.byId(CHECK_BTN_ID).setEnabled(true);
+          // thay cho check (excelData.length <= 1) cũ
+          if (aPrepared.length === 0) {
+            MessageToast.show("File không có dòng dữ liệu!");
+            this._refreshTable();
+            return;
           }
+
+          // ══════════ MỚI 3: chặn syntax FI (row + doc-level) ══════════
+          const aSynErrors = UploadValidator.validateFI(aPrepared);
+          if (aSynErrors.length > 0) {
+            ErrorDialog.handleErrorDialog(
+              aSynErrors.map((e) => ({
+                type: "Error",
+                title: `Dòng Excel ${e.excelRow} - cột ${e.field}`,
+                description: e.message,
+              })),
+              this,
+            );
+            this._refreshTable();
+            return;
+          }
+
+          // ══════════ FLOW CŨ GIỮ NGUYÊN, chỉ đổi nguồn data ══════════
+          const result = ExcelParser.processExcelData(
+            [null].concat(oStrip.rows),
+          );
+          this.dataUpload = result.data;
+          oModel.setProperty("/items", this.dataUpload);
+          this._buildColumns(); // các bước sẵn có của FI (build cột động...) giữ nguyên
+
+          MessageToast.show(
+            "Upload thành công " + this.dataUpload.length + " dòng",
+          );
+          this.byId("postButton").setEnabled(true); // đúng id nút của FI
+          this.byId("checkButton").setEnabled(true);
         } catch (error) {
-          if (error?.message) {
-            MessageBox.error(error.message);
-          } else {
-            MessageToast.show("Upload failed or was cancelled.");
-          }
-          this.byId(POST_BTN_ID).setEnabled(false);
-          this.byId(CHECK_BTN_ID).setEnabled(false);
+          MessageBox.error(error?.message || "Upload failed or was cancelled.");
         } finally {
           this._closeBusy();
         }
       },
-
+      
       onCheck(oEvent) {
         ApiService.checkFileExists(
           this._getODataModel(),
