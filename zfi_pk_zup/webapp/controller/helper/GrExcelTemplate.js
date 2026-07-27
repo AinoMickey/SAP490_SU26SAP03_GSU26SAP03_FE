@@ -52,7 +52,7 @@ sap.ui.define([], function () {
           "Item của PO", "Số lượng thực nhận", "Đơn vị theo PO", "Storage location"
         ]
       ];
-      const sheet = XLSX.utils.aoa_to_sheet([headerKeys, headerLabels, mappingHint]);
+      const sheet = XLSX.utils.aoa_to_sheet([headerKeys, headerLabels]);
 
       const range = XLSX.utils.decode_range(sheet["!ref"]);
       range.e.r = MAX_ROWS - 1;
@@ -83,7 +83,15 @@ sap.ui.define([], function () {
       const sStamp =
         oNow.getFullYear() + sPad(oNow.getMonth() + 1) + sPad(oNow.getDate()) +
         "_" + sPad(oNow.getHours()) + sPad(oNow.getMinutes()) + sPad(oNow.getSeconds());
+        const hintSheet = XLSX.utils.aoa_to_sheet(mappingHint);
+      hintSheet["!cols"] = headerKeys.map(() => ({ wch: 28 }));
+      XLSX.utils.book_append_sheet(wb, hintSheet, "Mapping");
       XLSX.writeFile(wb, "TEMPLATE_MM_POGR_" + sStamp + ".xlsx");
+
     },
+    getColumnData: function () {
+      return Object.assign({}, COLUMN_DATA);
+    },
+
   };
 });

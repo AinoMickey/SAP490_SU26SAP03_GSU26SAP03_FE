@@ -116,6 +116,12 @@ sap.ui.define([], function () {
   };
 
   return {
+    // MỚI: cho HistoryFileExport mượn lại đúng bộ key + label của template,
+    // để file dựng lại từ log có header y hệt file gốc.
+    getColumnData: function () {
+      return COLUMN_DATA;
+    },
+
     download: function () {
       const cleanData = Object.fromEntries(
         Object.entries(COLUMN_DATA).filter(([, v]) => v !== undefined),

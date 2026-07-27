@@ -252,6 +252,56 @@ sap.ui.define(
         );
       },
 
+      onDownloadHistoryFile: function (oEvent) {
+        const oCtx = oEvent.getSource().getBindingContext("pp");
+        if (!oCtx) return;
+
+        const sFilename = oCtx.getObject().Filename;
+        const oPpModel = this._getPpModel();
+        const that = this;
+
+        if (!sFilename) {
+          MessageBox.warning(
+            "Dòng này không có Filename trong log (lệnh tạo trước khi log lưu filename), không dựng lại file được.",
+          );
+          return;
+        }
+
+        this._showBusy();
+
+        sap.ui.require(
+          ["zfipkzup/controller/helper/HistoryFileExport"],
+          async function (HistoryFileExport) {
+            try {
+              const oRes = await HistoryFileExport.exportPp(
+                oPpModel,
+                sFilename,
+                {
+                  withRefs: true,
+                },
+              );
+              MessageToast.show(
+                "Đã tạo " +
+                  oRes.file +
+                  " (" +
+                  oRes.rows +
+                  " lệnh). Cột longtext không có trong log.",
+              );
+            } catch (e) {
+              MessageBox.error("Không dựng được file: " + (e.message || e));
+            } finally {
+              that._closeBusy();
+            }
+          },
+          function (oErr) {
+            that._closeBusy();
+            MessageBox.error(
+              "Không nạp được HistoryFileExport.js: " + (oErr.message || oErr),
+            );
+          },
+        );
+      },
+
       /**
        * Chuẩn hóa + validate dữ liệu Excel.
        * - Key lowercase + alias từ template cloud cũ

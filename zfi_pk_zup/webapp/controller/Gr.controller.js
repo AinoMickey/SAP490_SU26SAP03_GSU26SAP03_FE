@@ -9,11 +9,12 @@ sap.ui.define(
         "./helper/GrExcelTemplate",
         "./helper/ExcelParser",
         "./helper/ApiService",
-        "./helper/GrHistoryExport",
+               "./helper/GrHistoryExport",
+        "./helper/ErrorDialog",
         "./xlsx/xlsx.bundle",
     ],
     function (Controller, MessageToast, JSONModel, MessageBox, Filter, FilterOperator,
-        GrExcelTemplate, ExcelParser, ApiService, GrHistoryExport) {
+        GrExcelTemplate, ExcelParser, ApiService, GrHistoryExport, ErrorDialog) {
         "use strict";
 
         const UPLOAD_MODEL = "grModel";
@@ -30,7 +31,7 @@ sap.ui.define(
             onInit() {
                 this.getView().setModel(new JSONModel({
                     items: [],
-                    summary: { total: 0, valid: 0, invalid: 0 },
+                    summary: { total: 0, valid: 0, invalid: 0, errorCount: 0 },
                     summaryText: "",
                     summaryState: "None",
                     validPct: 0,
@@ -84,9 +85,37 @@ sap.ui.define(
             },
             shortBatchId(sBatchId) {
                 if (!sBatchId) return "";
-                return sBatchId.length > 12 ? sBatchId.substring(0, 8) + "..." : sBatchId;
+                // UUID theo thời gian: phần đầu giống nhau ở mọi dòng, chỉ đuôi mới phân biệt
+                return sBatchId.length > 10 ? "..." + sBatchId.slice(-10) : sBatchId;
             },
 
+
+                        onDownloadHistoryFile: function (oEvent) {
+                const oCtx = oEvent.getSource().getBindingContext("gr");
+                if (!oCtx) return;
+                const sBatchId = oCtx.getProperty("BatchId");
+                const oGrModel = this._getGrModel();
+                const that = this;
+
+                this._showBusy();
+                sap.ui.require(
+                    ["zfipkzup/controller/helper/HistoryFileExport"],
+                    async function (HistoryFileExport) {
+                        try {
+                            const oRes = await HistoryFileExport.exportGr(oGrModel, sBatchId, { withRefs: true });
+                            MessageToast.show("Đã tạo " + oRes.file + " (" + oRes.rows + " dòng)");
+                        } catch (e) {
+                            MessageBox.error("Không dựng được file: " + (e.message || e));
+                        } finally {
+                            that._closeBusy();
+                        }
+                    },
+                    function (oErr) {
+                        that._closeBusy();
+                        MessageBox.error("Không nạp được HistoryFileExport.js: " + (oErr.message || oErr));
+                    }
+                );
+            },
 
             // ── Upload / Parse ──
 
@@ -113,16 +142,17 @@ sap.ui.define(
                         return;
                     }
 
-                    excelData.shift(); // bỏ dòng label
+                    const bHasLabelRow = this._isLabelRow(excelData[0]);
+                    if (bHasLabelRow) excelData.shift();
 
-                    const result = this._processRows(excelData);
+                    const result = this._processRows(excelData, bHasLabelRow ? 3 : 2);
                     this.dataUpload = result.data;
+                    this._aRowErrors = result.errors;
                     oModel.setProperty("/items", this.dataUpload);
                     oModel.setProperty("/summary", result.summary);
                     oModel.setProperty("/summaryText", result.summaryText);
                     oModel.setProperty("/summaryState", result.summaryState);
                     oModel.setProperty("/validPct", result.validPct);
-
 
                     if (this.dataUpload.length === 0) {
                         MessageToast.show("Không có dòng dữ liệu hợp lệ!");
@@ -131,11 +161,19 @@ sap.ui.define(
                         return;
                     }
 
+                    if (result.errors.length > 0) {
+                        this.byId(POST_BTN_ID).setEnabled(false);
+                        this.byId(CHECK_BTN_ID).setEnabled(false);
+                        ErrorDialog.handleErrorDialog(result.errors, this);
+                        return;
+                    }
+
+
                     MessageToast.show("Đọc thành công " + this.dataUpload.length + " dòng");
                     this.byId(POST_BTN_ID).setEnabled(true);
                     this.byId(CHECK_BTN_ID).setEnabled(true);
                 } catch (err) {
-                    MessageBox.error(err?.message || "Lỗi đọc file.");
+                    MessageBox.error(this._extractError(err, "Lỗi đọc file."));
                     this.byId(POST_BTN_ID).setEnabled(false);
                     this.byId(CHECK_BTN_ID).setEnabled(false);
                 } finally {
@@ -144,16 +182,19 @@ sap.ui.define(
                 }
             },
 
-            _processRows(excelData) {
+                                 _processRows(excelData, iFirstExcelRow) {
                 const aData = [];
                 const _key = (row, k) => String(row[k] || row[k.toUpperCase()] || "").trim();
 
-                excelData.forEach((raw) => {
+                excelData.forEach((raw, i) => {
                     if (!raw) return;
                     if (!_key(raw, "po_number") && !_key(raw, "gr_number")) return;
+
+                    const oDate = this._parseDocDate(_key(raw, "document_date"));
                     const oRow = {
+                        rowNo: iFirstExcelRow + i,
                         gr_number: _key(raw, "gr_number"),
-                        document_date: this._convDate(_key(raw, "document_date")),
+                        document_date: oDate.value,
                         movement_type: _key(raw, "movement_type") || "101",
                         po_number: _key(raw, "po_number"),
                         po_item: _key(raw, "po_item"),
@@ -161,39 +202,118 @@ sap.ui.define(
                         unit: _key(raw, "unit"),
                         storage_location: _key(raw, "storage_location"),
                     };
-                    const bOk = !!(oRow.document_date && oRow.po_number && oRow.po_item && oRow.receive_qty && oRow.unit && oRow.storage_location);
-                    oRow.ValidationStatus = bOk ? "S" : "E";
-                    oRow.ValidationMessage = bOk ? "" : "Thiếu PO Number/PO Item/Receive Qty/Unit/Storage Location";
+
+                    const aErrors = this._validateRow(oRow, oDate.error);
+                    oRow.errors = aErrors;
+                    oRow.ValidationStatus = aErrors.length ? "E" : "S";
+                    oRow.ValidationMessage = aErrors.map((e) => e.text).join(" · ");
                     aData.push(oRow);
                 });
 
                 const iTotal = aData.length;
                 const iValid = aData.filter((r) => r.ValidationStatus === "S").length;
                 const iInvalid = iTotal - iValid;
+                const iErrorCount = aData.reduce((n, r) => n + r.errors.length, 0);
 
                 return {
                     data: aData,
-                    summary: { total: iTotal, valid: iValid, invalid: iInvalid },
+                    errors: aData.flatMap((r) => r.errors.map((e) => ({
+                        type: "Error",
+                        title: `Dòng ${r.rowNo} — cột ${e.column}`,
+                        subtitle: `GR ${r.gr_number || "(trống)"}`,
+                        description: e.text,
+                    }))),
+                    summary: { total: iTotal, valid: iValid, invalid: iInvalid, errorCount: iErrorCount },
                     summaryText: iInvalid === 0
                         ? `Tất cả ${iTotal} dòng hợp lệ`
-                        : `${iInvalid}/${iTotal} dòng thiếu thông tin`,
+                        : `${iInvalid}/${iTotal} dòng có lỗi — tổng ${iErrorCount} lỗi`,
                     summaryState: iInvalid === 0 ? "Success" : "Warning",
                     validPct: iTotal ? Math.round((iValid / iTotal) * 100) : 0,
                 };
             },
 
 
-                    _convDate(v) {
-                if (!v) return v;
-                if (/^\d+$/.test(String(v)) && String(v).length <= 6) {
-                    const oExcelEpoch = Date.UTC(1899, 11, 30);
-                    const oDate = new Date(oExcelEpoch + Number(v) * 86400000);
-                    const p = (n) => String(n).padStart(2, "0");
-                    return oDate.getUTCFullYear() + p(oDate.getUTCMonth() + 1) + p(oDate.getUTCDate());
-                }
-                if (v.length !== 10) return v;
-                return `${v.substring(6)}${v.substring(3, 5)}${v.substring(0, 2)}`;
+            /**
+             * Dòng nhãn có chữ nằm trong các cột vốn là số — dùng để phân biệt với dòng dữ liệu.
+             */
+            _isLabelRow(raw) {
+                if (!raw) return false;
+                const _v = (k) => String(raw[k] ?? raw[k.toUpperCase()] ?? "").trim();
+                const sQty = _v("receive_qty");
+                const sPo = _v("po_number");
+                if (sQty && isNaN(Number(sQty))) return true;
+                if (sPo && isNaN(Number(sPo))) return true;
+                return /gr\s*number/i.test(_v("gr_number"));
             },
+
+            /**
+             * Mỗi ô sai sinh 1 lỗi riêng, ghi rõ tên cột và giá trị đang có.
+             */
+            _validateRow(oRow, sDateError) {
+                const aErrors = [];
+                const _req = (sField, sColumn, sLabel) => {
+                    if (!String(oRow[sField] ?? "").trim()) {
+                        aErrors.push({ column: sColumn, text: `${sLabel} để trống` });
+                    }
+                };
+
+                _req("gr_number", "gr_number", "GR Number");
+                _req("po_number", "po_number", "PO Number");
+                _req("po_item", "po_item", "PO Item");
+                _req("unit", "unit", "Unit");
+                _req("storage_location", "storage_location", "Storage Location");
+
+                if (sDateError) aErrors.push({ column: "document_date", text: sDateError });
+
+                if (oRow.po_item && isNaN(Number(oRow.po_item))) {
+                    aErrors.push({ column: "po_item", text: `PO Item "${oRow.po_item}" không phải số` });
+                }
+
+                const sQty = String(oRow.receive_qty ?? "").trim();
+                if (!sQty) {
+                    aErrors.push({ column: "receive_qty", text: "Receive Qty để trống" });
+                } else if (isNaN(Number(sQty))) {
+                    aErrors.push({ column: "receive_qty", text: `Receive Qty "${sQty}" không phải số` });
+                } else if (Number(sQty) <= 0) {
+                    aErrors.push({ column: "receive_qty", text: `Receive Qty phải > 0 (đang là ${sQty})` });
+                }
+
+                return aErrors;
+            },
+
+            onShowRowError(oEvent) {
+                const oRow = oEvent.getSource().getBindingContext(UPLOAD_MODEL)?.getObject();
+                if (!oRow?.errors?.length) return;
+                ErrorDialog.handleErrorDialog(
+                    oRow.errors.map((e) => ({
+                        type: "Error",
+                        title: `Cột ${e.column}`,
+                        subtitle: `Dòng Excel ${oRow.rowNo} — GR ${oRow.gr_number || "(trống)"}`,
+                        description: e.text,
+                    })),
+                    this
+                );
+            },
+
+            _parseDocDate(v) {
+                const s = String(v || "").trim();
+                if (!s) return { value: "", error: "Document Date để trống" };
+
+                if (/^\d{5}$/.test(s)) {
+                    return { value: "", error:
+                        `Document Date đang là số serial của Excel (${s}). ` +
+                        `Định dạng ô về Text rồi nhập lại dạng DD/MM/YYYY.` };
+                }
+
+                const m = s.match(/^(\d{2})[/-](\d{2})[/-](\d{4})$/);
+                if (m) return { value: `${m[3]}${m[2]}${m[1]}`, error: "" };
+
+                if (/^\d{8}$/.test(s)) return { value: s, error: "" };
+
+                return { value: "", error:
+                    `Document Date "${s}" sai định dạng — phải là DD/MM/YYYY (vd 11/07/2026).` };
+            },
+
 
 
             // ── Check / Post (tab Upload) ──
@@ -248,7 +368,7 @@ sap.ui.define(
                         this._refreshPendingAndHistory();
                     }
                 } catch (err) {
-                    MessageBox.error(err?.message || JSON.stringify(err));
+                    MessageBox.error(this._extractError(err, "Lỗi khi gọi SAP."));
                 } finally {
                     this._closeBusy();
                 }
@@ -304,7 +424,7 @@ sap.ui.define(
                                 MessageToast.show("Đã gửi Post — đang xử lý nền, xem tab Lịch sử sau vài giây.");
                                 this._refreshPendingAndHistory();
                             } catch (err) {
-                                MessageBox.error(err?.message || "Lỗi khi Post.");
+                                MessageBox.error(this._extractError(err, "Lỗi khi Post."));
                             } finally {
                                 this._closeBusy();
                             }
@@ -358,7 +478,7 @@ sap.ui.define(
                     MessageToast.show("Đã gửi lại — đang xử lý nền.");
                     this._refreshPendingAndHistory();
                 } catch (err) {
-                    MessageBox.error(err?.message || "Lỗi khi Retry.");
+                     MessageBox.error(this._extractError(err, "Lỗi khi Retry."));
                 } finally {
                     this._closeBusy();
                 }
@@ -460,7 +580,40 @@ sap.ui.define(
                 this.byId(POST_BTN_ID).setEnabled(false);
                 this.byId(CHECK_BTN_ID).setEnabled(false);
                 this.byId("grFileUploader")?.clear();
+                this._aRowErrors = [];
             },
+
+            _extractError(err, sFallback) {
+                if (!err) return sFallback;
+
+                const oErr = err.error || (err.cause && err.cause.error);
+                if (oErr) {
+                    const aParts = [];
+                    if (oErr.message) aParts.push(oErr.message);
+                    if (Array.isArray(oErr.details)) {
+                        oErr.details.forEach((d) => {
+                            if (d.message && d.message !== oErr.message) aParts.push(d.message);
+                        });
+                    }
+                    if (aParts.length) return aParts.join("\n");
+                }
+
+                if (err.responseText) {
+                    try {
+                        const m = JSON.parse(err.responseText).error?.message;
+                        if (m) return m.value || m;
+                    } catch (e) {
+                        return err.responseText.substring(0, 500);
+                    }
+                }
+
+                return err.message || sFallback;
+            },
+                        onShowAllErrors() {
+                if (!this._aRowErrors?.length) return;
+                ErrorDialog.handleErrorDialog(this._aRowErrors, this);
+            },
+
         });
     }
 );

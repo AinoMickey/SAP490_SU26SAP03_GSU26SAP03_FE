@@ -1,116 +1,74 @@
-<mvc:View
-    controllerName="zfipkzup.controller.Fi"
-    xmlns:mvc="sap.ui.core.mvc"
-    xmlns="sap.m"
-    xmlns:u="sap.ui.unified"
-    xmlns:core="sap.ui.core"
-    xmlns:table="sap.ui.table"
-    displayBlock="true">
-
-    <Page id="fiPage" title="Upload Chứng từ FI" showNavButton="true" navButtonPress="onNavBack">
-        <content>
-            <IconTabBar id="idIconTabBar" expanded="true" headerMode="Inline" stretchContentHeight="true">
-                <items>
-                    <!-- ===== TAB UPLOAD ===== -->
-                    <IconTabFilter id="uploadTab" key="upload" text="Upload" icon="sap-icon://upload"
-                        class="sapUiResponsiveContentPadding">
-
-                        <core:Fragment fragmentName="zfipkzup.view.fragment.Busy" type="XML" />
-
-                        <!-- Cột được sinh động trong Fi.controller (_buildColumns)
-                             từ ColumnConfig.js: 88 cột, mặc định visible 13 cột chính -->
-                        <table:Table id="tableUpload"
-                            selectionMode="None"
-                            visibleRowCountMode="Interactive"
-                            rows="{uploadModel>/items}">
-                            <table:extension>
-                                <OverflowToolbar id="OverflowToolbar">
-                                    <Title id="title" text="Trạng thái Upload" />
-                                    <ToolbarSeparator id="_sep1" />
-                                    <u:FileUploader id="fileUploader"
-                                        name="myFileUpload"
-                                        width="400px"
-                                        fileType="xls,xlsx,csv"
-                                        sendXHR="true"
-                                        useMultipart="false"
-                                        change="onFileChange"
-                                        class="sapUiTinyMarginEnd"
-                                        buttonText="Chọn tài liệu..." />
-                                    <ToolbarSeparator id="_sep2" />
-                                    <Button id="_btnDl" text="Tải Template"
-                                        icon="sap-icon://download-from-cloud"
-                                        press="onDownloadTemplate" type="Attention" />
-                                    <ToolbarSpacer id="_spacer" />
-                                    <Button id="checkButton" text="Check"
-                                        icon="sap-icon://checklist"
-                                        press="onCheck" enabled="false"
-                                        type="Neutral" class="sapUiTinyMarginEnd" />
-                                    <Button id="postButton" text="Post"
-                                        icon="sap-icon://post"
-                                        press="onPost" enabled="false"
-                                        type="Success" class="sapUiTinyMarginEnd" />
-                                    <Button id="btnClear" text="Clear"
-                                        icon="sap-icon://clear-all"
-                                        press="onClearUpload"
-                                        type="Transparent"
-                                        tooltip="Xóa dữ liệu đã upload, chọn file mới" />
-                                    <ToolbarSeparator id="_sep3" />
-                                    <Button id="btnShowAll" text="All Field"
-                                        icon="sap-icon://show"
-                                        press="onShowAllColumns" type="Transparent"
-                                        tooltip="Hiển thị tất cả 88 field" />
-                                    <Button id="btnSetting" icon="sap-icon://action-settings"
-                                        press="openSetting"
-                                        tooltip="Tùy chỉnh cột hiển thị" />
-                                </OverflowToolbar>
-                            </table:extension>
-
-                            <table:noData>
-                                <IllustratedMessage id="_noData" enableVerticalResponsiveness="true"
-                                    title="Chưa có dữ liệu"
-                                    description="Tải Template, điền chứng từ rồi chọn file để upload" />
-                            </table:noData>
-                        </table:Table>
-                    </IconTabFilter>
-
-                    <IconTabSeparator id="_tabSep" />
-
-                    <!-- ===== TAB HISTORY (sap.m.Table binding V4) ===== -->
-                    <IconTabFilter id="historyTab" key="history" text="Lịch sử" icon="sap-icon://history">
-                        <Table id="historyTable"
-                            inset="false"
-                            growing="true"
-                            growingThreshold="50"
-                            mode="None"
-                            items="{
-                                path: '/UploadHistory',
-                                parameters: { '$orderby': 'pst_date desc' }
-                            }">
-                            <headerToolbar>
-                                <OverflowToolbar id="_histTb">
-                                    <Title id="_histTitle" text="Lịch sử Upload" />
-                                    <ToolbarSpacer id="_histSpacer" />
-                                    <Button id="_histRefresh" icon="sap-icon://refresh" press="onRefreshHistory" />
-                                </OverflowToolbar>
-                            </headerToolbar>
-                            <columns>
-                                <Column id="_hc1"><Text id="_ht1" text="Filename" /></Column>
-                                <Column id="_hc2"><Text id="_ht2" text="Posting Date" /></Column>
-                                <Column id="_hc3"><Text id="_ht3" text="Posted By" /></Column>
-                            </columns>
-                            <items>
-                                <ColumnListItem id="_hcli" type="Navigation" press="onHistoryItemPress">
-                                    <cells>
-                                        <Text id="_hcell1" text="{filename}" />
-                                        <Text id="_hcell2" text="{pst_date}" />
-                                        <Text id="_hcell3" text="{pst_user}" />
-                                    </cells>
-                                </ColumnListItem>
-                            </items>
-                        </Table>
-                    </IconTabFilter>
-                </items>
-            </IconTabBar>
-        </content>
-    </Page>
+<mvc:View xmlns:mvc="sap.ui.core.mvc" xmlns="sap.m" xmlns:u="sap.ui.unified" xmlns:core="sap.ui.core" xmlns:table="sap.ui.table" controllerName="zfipkzup.controller.Fi" displayBlock="true">
+<Page id="fiPage" title="Upload Chứng từ FI" showNavButton="true" navButtonPress="onNavBack">
+<content>
+<IconTabBar id="idIconTabBar" expanded="true" headerMode="Inline" stretchContentHeight="true">
+<items>
+<!--  ===== TAB UPLOAD =====  -->
+<IconTabFilter id="uploadTab" key="upload" text="Upload" icon="sap-icon://upload" class="sapUiResponsiveContentPadding">
+<core:Fragment fragmentName="zfipkzup.view.fragment.Busy" type="XML"/>
+<!--  Cột được sinh động trong Fi.controller (_buildColumns)
+                             từ ColumnConfig.js: 88 cột, mặc định visible 13 cột chính  -->
+<table:Table id="tableUpload" selectionMode="None" visibleRowCountMode="Interactive" rows="{uploadModel>/items}">
+<table:extension>
+<OverflowToolbar id="OverflowToolbar">
+<Title id="title" text="Trạng thái Upload"/>
+<ToolbarSeparator id="_sep1"/>
+<u:FileUploader id="fileUploader" name="myFileUpload" width="400px" fileType="xls,xlsx,csv" sendXHR="true" useMultipart="false" change="onFileChange" class="sapUiTinyMarginEnd" buttonText="Chọn tài liệu..."/>
+<ToolbarSeparator id="_sep2"/>
+<Button id="_btnDl" text="Tải Template" icon="sap-icon://download-from-cloud" press="onDownloadTemplate" type="Attention"/>
+<ToolbarSpacer id="_spacer"/>
+<Button id="checkButton" text="Check" icon="sap-icon://checklist" press="onCheck" enabled="false" type="Neutral" class="sapUiTinyMarginEnd"/>
+<Button id="postButton" text="Post" icon="sap-icon://post" press="onPost" enabled="false" type="Success" class="sapUiTinyMarginEnd"/>
+<Button id="btnClear" text="Clear" icon="sap-icon://clear-all" press="onClearUpload" type="Transparent" tooltip="Xóa dữ liệu đã upload, chọn file mới"/>
+<ToolbarSeparator id="_sep3"/>
+<Button id="btnShowAll" text="All Field" icon="sap-icon://show" press="onShowAllColumns" type="Transparent" tooltip="Hiển thị tất cả 88 field"/>
+<Button id="btnSetting" icon="sap-icon://action-settings" press="openSetting" tooltip="Tùy chỉnh cột hiển thị"/>
+</OverflowToolbar>
+</table:extension>
+<table:noData>
+<IllustratedMessage id="_noData" enableVerticalResponsiveness="true" title="Chưa có dữ liệu" description="Tải Template, điền chứng từ rồi chọn file để upload"/>
+</table:noData>
+</table:Table>
+</IconTabFilter>
+<IconTabSeparator id="_tabSep"/>
+<!--  ===== TAB HISTORY (sap.m.Table binding V4) =====  -->
+<IconTabFilter id="historyTab" key="history" text="Lịch sử" icon="sap-icon://history">
+<Table id="historyTable" inset="false" growing="true" growingThreshold="50" mode="None" items="{ path: '/UploadHistory', parameters: { '$orderby': 'pst_date desc' } }">
+<headerToolbar>
+<OverflowToolbar id="_histTb">
+<Title id="_histTitle" text="Lịch sử Upload"/>
+<ToolbarSpacer id="_histSpacer"/>
+<Button id="_histRefresh" icon="sap-icon://refresh" press="onRefreshHistory"/>
+</OverflowToolbar>
+</headerToolbar>
+<columns>
+<Column id="_hc1">
+<Text id="_ht1" text="Filename"/>
+</Column>
+<Column id="_hc2">
+<Text id="_ht2" text="Posting Date"/>
+</Column>
+<Column id="_hc3">
+<Text id="_ht3" text="Posted By"/>
+</Column>
+<Column id="_hc4" hAlign="Center" width="7rem">
+<Text id="_ht4" text="Tải file"/>
+</Column>
+</columns>
+<items>
+<ColumnListItem id="_hcli" type="Navigation" press="onHistoryItemPress">
+<cells>
+<Text id="_hcell1" text="{filename}"/>
+<Text id="_hcell2" text="{pst_date}"/>
+<Text id="_hcell3" text="{pst_user}"/>
+<Button id="_hcell4" icon="sap-icon://excel-attachment" type="Transparent" press="onDownloadHistoryFile" tooltip="Dựng lại file Excel từ dữ liệu đã post"/>
+</cells>
+</ColumnListItem>
+</items>
+</Table>
+</IconTabFilter>
+</items>
+</IconTabBar>
+</content>
+</Page>
 </mvc:View>

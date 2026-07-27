@@ -178,48 +178,64 @@
                          Field PascalCase theo CDS ZPP_I_ZUPLSX — đối chiếu tên element
                          thực tế trong CDS của anh, lệch thì sửa path. -->
                     <IconTabFilter id="ppHistoryTab" key="history" text="Lịch sử" icon="sap-icon://history">
-                        <Table id="ppHistoryTable"
-                            inset="false"
-                            growing="true"
-                            growingThreshold="50"
-                            mode="None"
-                            items="{
-                                path: 'pp>/UploadHistory',
-                                parameters: { '$orderby': 'StartDate desc' }
-                            }">
-                            <headerToolbar>
-                                <OverflowToolbar id="_ppHistTb">
-                                    <Title id="_ppHistTitle" text="Lệnh Sản Xuất Đã Upload" />
-                                    <ToolbarSpacer id="_ppHistSpacer" />
-                                    <Button id="_ppHistRefresh" icon="sap-icon://refresh" press="onRefreshHistory" />
-                                </OverflowToolbar>
-                            </headerToolbar>
-                            <columns>
-                                <Column id="_pphc1"><Text id="_ppht1" text="ID" /></Column>
-                                <Column id="_pphc2"><Text id="_ppht2" text="Production Order" /></Column>
-                                <Column id="_pphc3"><Text id="_ppht3" text="Plant" /></Column>
-                                <Column id="_pphc4"><Text id="_ppht4" text="Material" /></Column>
-                                <Column id="_pphc5"><Text id="_ppht5" text="Prod. Version" /></Column>
-                                <Column id="_pphc6"><Text id="_ppht6" text="Total Qty" /></Column>
-                                <Column id="_pphc7"><Text id="_ppht7" text="Start Date" /></Column>
-                                <Column id="_pphc8"><Text id="_ppht8" text="End Date" /></Column>
-                            </columns>
-                            <items>
-                                <ColumnListItem id="_pphcli" type="Navigation" press="onHistoryItemPress">
-                                    <cells>
-                                        <Text id="_pphcell1" text="{pp>IdDoc}" />
-                                        <Text id="_pphcell2" text="{pp>ProductionOrder}" />
-                                        <Text id="_pphcell3" text="{pp>ProductionPlant}" />
-                                        <Text id="_pphcell4" text="{pp>Material}" />
-                                        <Text id="_pphcell5" text="{pp>ProductionVersion}" />
-                                        <Text id="_pphcell6" text="{pp>TotalQty}" />
-                                        <Text id="_pphcell7" text="{pp>StartDate}" />
-                                        <Text id="_pphcell8" text="{pp>EndDate}" />
-                                    </cells>
-                                </ColumnListItem>
-                            </items>
-                        </Table>
-                    </IconTabFilter>
+<Table id="ppHistoryTable" inset="false" growing="true" growingThreshold="50" mode="None" items="{ path: 'pp>/UploadHistory', parameters: { '$orderby': 'StartDate desc' } }">
+<headerToolbar>
+<OverflowToolbar id="_ppHistTb">
+<Title id="_ppHistTitle" text="Lệnh Sản Xuất Đã Upload"/>
+<ToolbarSpacer id="_ppHistSpacer"/>
+<Button id="_ppHistRefresh" icon="sap-icon://refresh" press="onRefreshHistory"/>
+</OverflowToolbar>
+</headerToolbar>
+<columns>
+<Column id="_pphc1">
+<Text id="_ppht1" text="ID"/>
+</Column>
+<Column id="_pphc2">
+<Text id="_ppht2" text="Production Order"/>
+</Column>
+<Column id="_pphc3">
+<Text id="_ppht3" text="Plant"/>
+</Column>
+<Column id="_pphc4">
+<Text id="_ppht4" text="Material"/>
+</Column>
+<Column id="_pphc5">
+<Text id="_ppht5" text="Prod. Version"/>
+</Column>
+<Column id="_pphc6">
+<Text id="_ppht6" text="Total Qty"/>
+</Column>
+<Column id="_pphc7">
+<Text id="_ppht7" text="Start Date"/>
+</Column>
+<Column id="_pphc8">
+<Text id="_ppht8" text="End Date"/>
+</Column>
+<Column id="_pphc9" minScreenWidth="Tablet" demandPopin="true">
+<Text id="_ppht9" text="Filename"/>
+</Column>
+<Column id="_pphc10" hAlign="Center" width="7rem">
+<Text id="_ppht10" text="Tải file"/>
+</Column>
+</columns>
+<items>
+<ColumnListItem id="_pphcli" type="Navigation" press="onHistoryItemPress">
+<cells>
+<Text id="_pphcell1" text="{pp>IdDoc}"/>
+<Text id="_pphcell2" text="{pp>ProductionOrder}"/>
+<Text id="_pphcell3" text="{pp>ProductionPlant}"/>
+<Text id="_pphcell4" text="{pp>Material}"/>
+<Text id="_pphcell5" text="{pp>ProductionVersion}"/>
+<Text id="_pphcell6" text="{pp>TotalQty}"/>
+<Text id="_pphcell7" text="{pp>StartDate}"/>
+<Text id="_pphcell8" text="{pp>EndDate}"/>
+<Text id="_pphcell9" text="{pp>Filename}"/>
+<Button id="_pphcell10" icon="sap-icon://excel-attachment" type="Transparent" press="onDownloadHistoryFile" tooltip="Dựng lại file Excel của filename này"/>
+</cells>
+</ColumnListItem>
+</items>
+</Table>
+</IconTabFilter>
                 </items>
             </IconTabBar>
         </content>

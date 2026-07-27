@@ -3,71 +3,72 @@
     xmlns:core="sap.ui.core">
     <Dialog id="grItemDetailDialog"
         title="Chi tiết Item — GR {itemDialog>/grNumber}"
-        contentWidth="50rem">
-        <customHeader>
-            <Bar id="_gidBar">
-                <contentMiddle>
-                    <Title id="_gidTitle" text="Chi tiết item" level="H1" />
-                </contentMiddle>
-                <contentRight>
-                    <HBox id="_gidStatsBox" alignItems="Center" class="sapUiSmallMarginEnd">
-                        <ObjectStatus id="_gidStatTotal" text="{itemDialog>/totalItems} item"
-                            state="Information"
-                            class="sapUiSmallMarginEnd" />
-                        <ObjectStatus id="_gidStatValid" text="{itemDialog>/validItems} ✓"
-                            state="Success"
-                            icon="sap-icon://accept"
-                            class="sapUiSmallMarginEnd" />
-                        <ObjectStatus id="_gidStatInvalid" text="{itemDialog>/invalidItems} ✕"
-                            state="{itemDialog>/summaryState}"
-                            icon="sap-icon://alert" />
-                    </HBox>
-                </contentRight>
-            </Bar>
-        </customHeader>
+        contentWidth="64rem"
+        contentHeight="30rem"
+        resizable="true"
+        draggable="true"
+        verticalScrolling="true">
+        <subHeader>
+            <Toolbar id="_gidSubTb">
+                <ObjectStatus id="_gidStatTotal" title="Tổng"
+                    text="{itemDialog>/totalItems} item" class="sapUiMediumMarginEnd" />
+                <ObjectStatus id="_gidStatOk" title="Thành công"
+                    text="{itemDialog>/validItems}" state="Success"
+                    icon="sap-icon://accept" class="sapUiMediumMarginEnd" />
+                <ObjectStatus id="_gidStatErr" title="Lỗi"
+                    text="{itemDialog>/invalidItems}"
+                    state="{= ${itemDialog>/invalidItems} === 0 ? 'Success' : 'Error' }"
+                    icon="sap-icon://alert" />
+            </Toolbar>
+        </subHeader>
         <content>
-            <Table id="grItemDetailTable" items="{gr>/GrItem}" noDataText="Không có item nào">
+            <Table id="grItemDetailTable"
+                items="{gr>/GrItem}"
+                noDataText="Không có item nào"
+                fixedLayout="false"
+                popinLayout="GridLarge"
+                sticky="ColumnHeaders">
                 <columns>
                     <Column id="_gidc1" width="4rem"><Text id="_gidt1" text="Item" /></Column>
                     <Column id="_gidc2" width="9rem"><Text id="_gidt2" text="PO Number" /></Column>
                     <Column id="_gidc3" width="5rem"><Text id="_gidt3" text="PO Item" /></Column>
-                    <Column id="_gidc4" width="14rem"><Text id="_gidt4" text="Material" /></Column>
-                    <Column id="_gidc5" width="6rem"><Text id="_gidt5" text="Plant" /></Column>
-                    <Column id="_gidc6" width="7rem" hAlign="End"><Text id="_gidt6" text="Receive Qty" /></Column>
-                    <Column id="_gidc7" width="5rem"><Text id="_gidt7" text="Unit" /></Column>
-                    <Column id="_gidc8" width="9rem"><Text id="_gidt8" text="Status" /></Column>
-                    <Column id="_gidc9" width="20rem"><Text id="_gidt9" text="Message" /></Column>
+                    <Column id="_gidc4" width="11rem" minScreenWidth="Tablet" demandPopin="true">
+                        <Text id="_gidt4" text="Material" />
+                    </Column>
+                    <Column id="_gidc5" width="5rem" minScreenWidth="Tablet" demandPopin="true">
+                        <Text id="_gidt5" text="Plant" />
+                    </Column>
+                    <Column id="_gidc6" width="8rem" hAlign="End">
+                        <Text id="_gidt6" text="Receive Qty" />
+                    </Column>
+                    <Column id="_gidc10" width="11rem">
+                        <Text id="_gidt10" text="Material Doc / Năm" />
+                    </Column>
+                    <Column id="_gidc8" width="8rem"><Text id="_gidt8" text="Status" /></Column>
+                    <Column id="_gidc9" minScreenWidth="Tablet" demandPopin="true">
+                        <Text id="_gidt9" text="Message" />
+                    </Column>
                 </columns>
                 <items>
-                    <ColumnListItem id="_giditem"
-                        highlight="{= ${gr>Status} === 'E' ? 'Error' : 'None'}">
+                    <ColumnListItem id="_giditem" vAlign="Top">
                         <cells>
                             <Text id="_gidcell1" text="{gr>Item}" />
-                            <Text id="_gidcell2" text="{gr>PoNumber}" design="Monospace" wrapping="false" tooltip="{gr>PoNumber}" />
+                            <Text id="_gidcell2" text="{gr>PoNumber}" />
                             <Text id="_gidcell3" text="{gr>PoItem}" />
-                            <Text id="_gidcell4" text="{gr>Material}" wrapping="false" tooltip="{gr>Material}" />
+                            <Text id="_gidcell4" text="{gr>Material}" tooltip="{gr>Material}" />
                             <Text id="_gidcell5" text="{gr>Plant}" />
-                            <Text id="_gidcell6" text="{gr>ReceiveQty}" hAlign="End" />
-                            <Text id="_gidcell7" text="{gr>Unit}" />
+                            <ObjectNumber id="_gidcell6" number="{gr>ReceiveQty}" unit="{gr>Unit}" />
+                            <Text id="_gidcell10"
+                                text="{= ${gr>MaterialDocument} ? ${gr>MaterialDocument} + ' / ' + ${gr>MaterialDocumentYear} : '—' }" />
                             <ObjectStatus id="_gidcell8"
-                                text="{gr>Status}"
-                                state="{= ${gr>StatusCriticality} === 3 ? 'Success' : ${gr>StatusCriticality} === 1 ? 'Error' : 'None' }" />
-                            <Text id="_gidcell9" text="{gr>Message}" wrapping="false" tooltip="{gr>Message}" />
+                                text="{= ${gr>Status} === 'S' ? 'Thành công' : ${gr>Status} === 'E' ? 'Lỗi' : ${gr>Status} === 'P' ? 'Đang xử lý' : 'Nháp' }"
+                                state="{= ${gr>StatusCriticality} === 3 ? 'Success' : ${gr>StatusCriticality} === 1 ? 'Error' : 'None' }"
+                                icon="{= ${gr>StatusCriticality} === 3 ? 'sap-icon://sys-enter-2' : ${gr>StatusCriticality} === 1 ? 'sap-icon://error' : 'sap-icon://pending' }" />
+                            <Text id="_gidcell9" text="{gr>Message}" tooltip="{gr>Message}" />
                         </cells>
                     </ColumnListItem>
                 </items>
             </Table>
-            <Panel id="_gidErrorPanel" headerText="Các lỗi item" expandable="false"
-                visible="{itemDialog>/hasErrors}"
-                class="sapUiSmallMarginTop">
-                <List id="_gidErrorList" items="{path:'itemDialog>/errors'}">
-                    <items>
-                        <StandardListItem id="_gidErrorItem" title="{itemDialog>title}"
-                            description="{itemDialog>description}"
-                            type="Inactive" />
-                    </items>
-                </List>
-            </Panel>
         </content>
         <beginButton>
             <Button id="_gidCloseBtn" text="Đóng" press=".onCloseItemDialog" />

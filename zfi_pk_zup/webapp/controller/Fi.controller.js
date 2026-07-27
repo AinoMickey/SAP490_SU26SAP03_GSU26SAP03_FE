@@ -73,6 +73,7 @@ sap.ui.define(
        */
       _buildColumns() {
         const oTable = this.byId(UPLOAD_TABLE_ID);
+        oTable.destroyColumns(); 
         const aVisibleKeys = ColumnSettingsDialog.getInitialVisibleKeys();
 
         ColumnConfig.getColumns().forEach((c) => {
@@ -134,7 +135,7 @@ sap.ui.define(
       onFileChange: async function (oEvent) {
         const oFile =
           oEvent.getParameter("files") && oEvent.getParameter("files")[0];
-        const oModel = this.getView().getModel(UPLOAD_MODEL); // tên model FI của anh
+        const oModel = this.getView().getModel(UPLOAD_TABLE_MODEL); // tên model FI của anh
 
         if (!oFile) {
           this._refreshTable();
@@ -376,6 +377,44 @@ sap.ui.define(
         );
       },
       // ── UI Utilities ──
+      onDownloadHistoryFile: function (oEvent) {
+        const oCtx = oEvent.getSource().getBindingContext();
+        if (!oCtx) return;
+
+        const sFilename = oCtx.getObject().filename;
+        const oFiModel = this.getView().getModel(); // model mặc định = service FI
+        const that = this;
+
+        this._showBusy();
+
+        sap.ui.require(
+          ["zfipkzup/controller/helper/HistoryFileExport"],
+          async function (HistoryFileExport) {
+            try {
+              const oRes = await HistoryFileExport.exportFi(oFiModel, sFilename, {
+                withRefs: true,
+              });
+              MessageToast.show(
+                "Đã tạo " + oRes.file + " (" + oRes.rows + " dòng bút toán)",
+              );
+            } catch (e) {
+              MessageBox.error(
+                "Không dựng được file: " + (e.message || e) +
+                  "\n\nKiểm tra: CDS ZFI_I_DIS_UP_I đã thêm field mới và đã publish lại chưa.",
+              );
+            } finally {
+              that._closeBusy();
+            }
+          },
+          function (oErr) {
+            that._closeBusy();
+            MessageBox.error(
+              "Không nạp được HistoryFileExport.js: " + (oErr.message || oErr),
+            );
+          },
+        );
+      },
+
       _showBusy() {
         const oBusy = this.byId("idBusyDialog");
         if (oBusy) oBusy.open();

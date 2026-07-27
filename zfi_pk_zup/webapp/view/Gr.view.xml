@@ -80,13 +80,21 @@
                                             icon="sap-icon://accept"
                                             class="sapUiMediumMarginEnd"
                                         />
-                                        <ObjectStatus
+                                                                                <ObjectStatus
                                             id="_grStatInvalid"
                                             title="Lỗi"
-                                            text="{grModel>/summary/invalid}"
+                                            text="{= ${grModel>/summary/invalid} + ' dòng / ' + ${grModel>/summary/errorCount} + ' lỗi' }"
                                             state="{= ${grModel>/summary/invalid} === 0 ? 'Success' : 'Error' }"
                                             icon="sap-icon://alert"
                                             class="sapUiMediumMarginEnd"
+                                        />
+                                        <Button
+                                            id="_grBtnShowErrors"
+                                            text="{= 'Xem chi tiết lỗi (' + ${grModel>/summary/errorCount} + ')' }"
+                                            icon="sap-icon://alert"
+                                            type="Transparent"
+                                            press="onShowAllErrors"
+                                            visible="{= ${grModel>/summary/invalid} > 0 }"
                                         />
                                     </HBox>
                                     <HBox
@@ -427,13 +435,16 @@
                                         id="_gL9"
                                         text="Status"
                                     />
-                                    <table:template>
+                                                                        <table:template>
                                         <ObjectStatus
                                             id="_gST1"
                                             text="{grModel>ValidationStatus}"
                                             state="{= ${grModel>ValidationStatus} === 'S' ? 'Success' : 'Error' }"
+                                            active="{= ${grModel>ValidationStatus} === 'E' }"
+                                            press="onShowRowError"
                                         />
                                     </table:template>
+
                                 </table:Column>
                                 <table:Column
                                     id="grColMsg"
@@ -447,9 +458,11 @@
                                         <Text
                                             id="_gT9"
                                             text="{grModel>ValidationMessage}"
-                                            wrapping="false"
+                                            tooltip="{grModel>ValidationMessage}"
+                                            wrapping="true"
                                         />
                                     </table:template>
+
                                 </table:Column>
                             </table:columns>
                         </table:Table>
@@ -623,6 +636,12 @@
                                     key="E"
                                     text="Lỗi"
                                 />
+                                <core:Item
+                                    id="_gfi4"
+                                    key="P"
+                                    text="Đang xử lý"
+                                />
+
                             </Select>
                             <SearchField
                                 id="grFilterSearch"
@@ -712,7 +731,7 @@
                                 <Column id="_grhc3">
                                     <Text
                                         id="_grht3"
-                                        text="Mat. Doc"
+                                        text="Mat. Doc / Năm"
                                     />
                                 </Column>
                                 <Column id="_grhc4">
@@ -757,6 +776,13 @@
                                         text=""
                                     />
                                 </Column>
+                                <Column id="_grhc11">
+                                    <Text
+                                        id="_grht11"
+                                        text=""
+                                    />
+                                </Column>
+
                             </columns>
                             <items>
                                 <ColumnListItem
@@ -778,8 +804,9 @@
 
                                         <Text
                                             id="_grhcell3"
-                                            text="{gr>MaterialDocument}"
+                                            text="{= ${gr>MaterialDocument} ? ${gr>MaterialDocument} + ' / ' + ${gr>MaterialDocumentYear} : '' }"
                                         />
+
                                         <Text
                                             id="_grhcell4"
                                             text="{gr>Message}"
@@ -820,9 +847,18 @@
                                             icon="sap-icon://redo"
                                             tooltip="Retry (Lỗi hoặc đang chờ xử lý)"
                                             press="onRetry"
-                                            visible="{path: 'gr>Status', formatter: '.formatIsError'}"
+                                            visible="{path: 'gr>Status', formatter: '.formatIsError', targetType: 'any'}"
                                             type="Transparent"
                                         />
+                                                                                <Button
+                                            id="_grhBtnDlFile"
+                                            icon="sap-icon://excel-attachment"
+                                            tooltip="Tải lại file Excel đã upload"
+                                            press="onDownloadHistoryFile"
+                                            type="Transparent"
+                                            enabled="{= !!${path: 'gr>BatchId', targetType: 'any'} }"
+                                        />
+
                                     </cells>
                                 </ColumnListItem>
                             </items>
