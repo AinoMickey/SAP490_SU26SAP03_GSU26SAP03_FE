@@ -60,7 +60,7 @@ Hai Fiori apps triển khai trên SAP BTP, kết nối với SAP S/4HANA On-Prem
 📦 SAP490_SU26SAP03_GSU26SAP03_FE/
  ├── zfi_pk_zup/                        # Upload Hub
  │   └── webapp/
- │       ├── manifest.json              # 3 data sources + models + routes
+ │       ├── manifest.json              # data sources (mainService FI + pp + gr) + models + routes
  │       ├── view/
  │       │   ├── App.view.xml
  │       │   ├── Main.view.xml          # Landing page — chọn loại chứng từ
@@ -68,34 +68,51 @@ Hai Fiori apps triển khai trên SAP BTP, kết nối với SAP S/4HANA On-Prem
  │       │   ├── Pp.view.xml            # PP Upload + history
  │       │   ├── Gr.view.xml            # GR Upload + history (async APJ)
  │       │   └── fragment/
- │       │       └── Busy.fragment.xml
+ │       │       ├── Busy.fragment.xml
+ │       │       └── GrItemDetail.fragment.xml  # Dialog chi tiết item của 1 GR
  │       ├── controller/
  │       │   ├── App.controller.js
  │       │   ├── Main.controller.js
- │       │   ├── Fi.controller.js       # FI upload logic + SheetJS
- │       │   ├── Pp.controller.js       # PP upload logic + SheetJS
- │       │   ├── Gr.controller.js       # GR upload logic + group by GR#
+ │       │   ├── Fi.controller.js       # FI upload logic + SheetJS + _loadAuth
+ │       │   ├── Pp.controller.js       # PP upload logic + SheetJS + _loadAuth
+ │       │   ├── Gr.controller.js       # GR upload logic + group by GR# + _loadAuth + polling
+ │       │   ├── xlsx/                  # xlsx.js / xlsx.bundle.js (SheetJS, vendor)
  │       │   └── helper/
- │       │       ├── ApiService.js      # OData V4 bound action calls
+ │       │       ├── ApiService.js      # OData V4 bound action calls + loadMyAuth/getUserEmail
  │       │       ├── ColumnConfig.js    # 88-col config cho FI
- │       │       └── ExcelExport.js     # Export kết quả ra Excel
+ │       │       ├── ColumnSettingsDialog.js  # Toggle "All Field" cho bảng FI
+ │       │       ├── ErrorDialog.js     # Hiển thị message lỗi SAP/BAPI
+ │       │       ├── ExcelParser.js     # Parse workbook chung (FI/PP)
+ │       │       ├── ExcelTemplate.js   # Sinh template Excel FI
+ │       │       ├── GrExcelTemplate.js # Sinh template Excel GR
+ │       │       ├── GrHistoryExport.js # Export tab Lịch sử GR ra Excel
+ │       │       ├── HistoryDetailDialog.js   # Dialog chi tiết 1 dòng lịch sử FI/PP
+ │       │       ├── HistoryFileExport.js     # Export lịch sử FI/PP ra Excel
+ │       │       ├── P13nHelper.js      # Personalization (ẩn/hiện, sắp cột)
+ │       │       ├── PpExcelTemplate.js # Sinh template Excel PP
+ │       │       ├── ResultsDialog.js   # Dialog kết quả Check/Upload
+ │       │       └── UploadValidator.js # Validate file trước khi gửi lên OData
  │       ├── model/
  │       ├── i18n/
- │       └── css/
+ │       ├── css/
+ │       └── test/                      # OPA + QUnit scaffolding (mặc định UI5, chưa viết test case riêng)
  └── zup_rpt/                           # Analytics Hub
      └── webapp/
-         ├── manifest.json              # 3 data sources + models + routes
+         ├── manifest.json              # mainService (ZUP_UI_RPT_O4) + grService (ZMM_UI_POGR_O4) + routes
          ├── view/
          │   ├── App.view.xml
          │   ├── Main.view.xml          # Dashboard — KPI tiles + nav cards
          │   ├── FiRpt.view.xml         # FI Analytics: filter + KPI + chart + table
          │   ├── PpRpt.view.xml         # PP Analytics
-         │   └── GrRpt.view.xml         # GR Analytics (7 cột + StatusCriticality)
+         │   ├── GrRpt.view.xml         # GR Analytics (7 cột + StatusCriticality)
+         │   └── KpiRpt.view.xml        # KPI tổng hợp GR+FI+PP (route "kpirpt")
          ├── controller/
          │   ├── Main.controller.js
          │   ├── FiRpt.controller.js
          │   ├── PpRpt.controller.js
          │   ├── GrRpt.controller.js
+         │   ├── KpiRpt.controller.js   # đọc entity UploadKPI, tính successRate/errorRate/avgSeconds
+         │   ├── xlsx/                  # xlsx.js / xlsx.bundle.js (SheetJS, vendor)
          │   └── helper/
          │       ├── Formatter.js       # criticalityToState, statusText
          │       ├── SimpleChart.js     # SVG chart tự vẽ
@@ -145,6 +162,19 @@ npm start
 - History binding: `{path: 'gr>/GrUpload', parameters: {'$orderby': 'CreatedAt desc'}}`
 - Status hiển thị bằng `ObjectStatus` với `criticalityToState` formatter
 
+### Authorization (cả 3 tab FI/PP/GR)
+
+Mỗi controller (`Fi.controller.js`, `Pp.controller.js`, `Gr.controller.js`) gọi
+`_loadAuth()` trong `onInit`, dùng `ApiService.loadMyAuth()` để lấy
+`can_upload_fi/pp/gr` (action `getMyAuth` đặt trên service GR nhưng trả quyền của
+cả 3 phân hệ). Nếu `can_upload_<module> === false`, ẩn nút Check và Post của tab
+đó. Email dùng để check lấy từ `ApiService.getUserEmail()` — đọc
+`sap.ushell.Container` `UserInfo` service (SSO thật của Work Zone), cache lại sau
+lần gọi đầu; chạy ngoài launchpad (ví dụ `npm start` local) trả email rỗng và
+backend sẽ từ chối kèm lý do. Đây chỉ là gate ở UI (ẩn nút) — quyền thật chặn ở
+backend khi gọi action `uploadFromExcel`/`uploadExcel`/`retryPost` (xem
+README_BE.md, mục Authorization).
+
 ### OData V4 Action Pattern (GR)
 
 ```javascript
@@ -173,7 +203,20 @@ npm start
 
 ### Các trang phân tích
 
-Mỗi trang (FiRpt / PpRpt / GrRpt) có cấu trúc giống nhau:
+4 trang: `FiRpt` / `PpRpt` / `GrRpt` (báo cáo riêng từng module) và `KpiRpt`
+(route `kpirpt`, dashboard **tổng hợp cả 3 module**, KPI thứ 4 trong app này).
+
+`KpiRpt` đọc entity `UploadKPI` của service `ZUP_UI_RPT_O4` (CDS
+`ZUP_C_UPLOAD_KPI`, `UNION ALL` GR+FI+PP+bảng lỗi) — filter theo khoảng ngày/loại
+chứng từ/status/created by, tính `total`, `success`, `error`, `pending`,
+`successRate`, `errorRate`, và **`avgSeconds`** (thời gian xử lý trung bình, chỉ
+tính được cho GR vì chỉ GR có mốc thời gian tạo/hoàn tất qua job nền — FI/PP post
+đồng bộ nên không có khoảng cách thời gian đáng kể để đo). Đây chính là KPI
+"thời gian xử lý" theo yêu cầu #7 của đề bài. Có chart theo dimension (DocType/
+Status/Month/CreatedBy) và export Excel (Summary + Data, có ghi rõ filter đang áp
+dụng).
+
+Mỗi trang FiRpt / PpRpt / GrRpt có cấu trúc giống nhau:
 
 ```
 Filter Bar
@@ -323,10 +366,11 @@ ABAP Backend (OData V4 services, BAPI, APJ Job) nằm ở repo riêng:
 
 **[SAP490_SU26SAP03_GSU26SAP03](https://github.com/tata-nguyen-BA/SAP490_SU26SAP03_GSU26SAP03)**
 
-Gồm 3 packages:
-- `ZFI_PK_FIDOC_LEGACY` — FI Journal Entry
+Package gốc `ZPK_GSU26SAP03` (chứa luôn class nghiệp vụ FI) + 4 sub-package:
+- `ZFI_PK_FIDOC_LEGACY` — chỉ còn HTTP wrapper cho SOAP post của FI
 - `ZPP_PK_ZUPLSX` — PP Production Order
-- `ZIH_POGR` — MM Goods Receipt + APJ Background Job
+- `ZIH_POGR` — MM Goods Receipt + APJ Background Job (module chính)
+- `ZPK_ZUP_RPT` — CDS báo cáo/KPI dùng chung cho app `zup_rpt` ở trên
 
 ---
 
