@@ -61,6 +61,9 @@ sap.ui.define(
           UPLOAD_TABLE_MODEL,
         );
         this._buildColumns();
+        //ThaoNTT add
+        this._loadAuth();
+
       },
 
       onExit() {
@@ -269,8 +272,8 @@ sap.ui.define(
         } catch (error) {
           MessageBox.error(
             error?.message ||
-              this._t("UPLOAD_CANCELLED", null,
-                "Tải lên bị hủy hoặc thất bại."),
+            this._t("UPLOAD_CANCELLED", null,
+              "Tải lên bị hủy hoặc thất bại."),
           );
         } finally {
           this._closeBusy();
@@ -364,9 +367,9 @@ sap.ui.define(
           sText =
             oSum.err > 0
               ? this._t("STATUS_CHECK_ERR", [oSum.err, oSum.total],
-                  "Kiểm tra: " + oSum.err + "/" + oSum.total + " lỗi")
+                "Kiểm tra: " + oSum.err + "/" + oSum.total + " lỗi")
               : this._t("STATUS_CHECK_OK", [oSum.ok, oSum.total],
-                  "Kiểm tra: " + oSum.ok + "/" + oSum.total + " hợp lệ");
+                "Kiểm tra: " + oSum.ok + "/" + oSum.total + " hợp lệ");
         } else if (oSum.err === 0 && oSum.ok > 0) {
           sText = this._t("STATUS_POSTED", [oSum.ok, oSum.total],
             "Đã post " + oSum.ok + "/" + oSum.total + " chứng từ");
@@ -511,9 +514,9 @@ sap.ui.define(
               MessageBox.error(
                 that._t("ERROR_BUILD_FILE", [e.message || e],
                   "Không dựng được file: " + (e.message || e)) +
-                  "\n\n" +
-                  that._t("ERROR_BUILD_FILE_HINT", null,
-                    "Kiểm tra: CDS ZFI_I_DIS_UP_I đã thêm field mới và đã publish lại chưa."),
+                "\n\n" +
+                that._t("ERROR_BUILD_FILE_HINT", null,
+                  "Kiểm tra: CDS ZFI_I_DIS_UP_I đã thêm field mới và đã publish lại chưa."),
               );
             } finally {
               that._closeBusy();
@@ -556,6 +559,23 @@ sap.ui.define(
         this.byId("fileUploader")?.clear();
         this._resetPostStatus(); // MỚI
       },
+      //ThaoNTT add
+      _loadAuth: async function () {
+        try {
+          const oAuth = await ApiService.loadMyAuth(
+            this.getOwnerComponent().getModel("gr")
+          );
+          if (oAuth.can_upload_fi === false) {
+            this.byId(POST_BTN_ID)?.setVisible(false);
+            this.byId(CHECK_BTN_ID)?.setVisible(false);
+            this.byId("fileUploader")?.setEnabled(false);   // ← THÊM: khóa nút chọn file
+            this._bNoAuth = true;
+          }
+        } catch (e) {
+          // Không đọc được quyền thì để nguyên nút — backend vẫn chặn
+        }
+      },
+
     });
   },
 );

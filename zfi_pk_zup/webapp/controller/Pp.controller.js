@@ -46,6 +46,8 @@ sap.ui.define(
 
       onInit() {
         this.getView().setModel(new JSONModel({ items: [] }), UPLOAD_MODEL);
+         //ThaoNTT add
+        this._loadAuth();
       },
 
       onExit() {
@@ -638,6 +640,23 @@ sap.ui.define(
         this.byId(CHECK_BTN_ID).setEnabled(false);
         this.byId("ppFileUploader")?.clear();
       },
+
+            //ThaoNTT add
+                  _loadAuth: async function () {
+                try {
+                    const oAuth = await ApiService.loadMyAuth(
+                        this.getOwnerComponent().getModel("gr")
+                    );
+                    if (oAuth.can_upload_pp === false) {
+                        this.byId(POST_BTN_ID)?.setVisible(false);
+                        this.byId(CHECK_BTN_ID)?.setVisible(false);
+                         this.byId("fileUploader")?.setEnabled(false);   // ← THÊM: khóa nút chọn file
+            this._bNoAuth = true; 
+                    }
+                } catch (e) {
+                    // Không đọc được quyền thì để nguyên nút — backend vẫn chặn
+                }
+            },
     });
   },
 );

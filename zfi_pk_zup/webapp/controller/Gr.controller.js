@@ -9,7 +9,7 @@ sap.ui.define(
         "./helper/GrExcelTemplate",
         "./helper/ExcelParser",
         "./helper/ApiService",
-               "./helper/GrHistoryExport",
+        "./helper/GrHistoryExport",
         "./helper/ErrorDialog",
         "./xlsx/xlsx.bundle",
     ],
@@ -44,6 +44,7 @@ sap.ui.define(
                 this.getView().setModel(new JSONModel({}), "grResult");
                 this.onApplyHistoryFilter();
                 this._startPolling();
+                this._loadAuth();
             },
 
 
@@ -93,7 +94,7 @@ sap.ui.define(
             },
 
 
-                        onDownloadHistoryFile: function (oEvent) {
+            onDownloadHistoryFile: function (oEvent) {
                 const oCtx = oEvent.getSource().getBindingContext("gr");
                 if (!oCtx) return;
                 const sBatchId = oCtx.getProperty("BatchId");
@@ -117,15 +118,15 @@ sap.ui.define(
                     },
                     function (oErr) {
                         that._closeBusy();
-                            const oBundle = that.getView().getModel("i18n").getResourceBundle();
-                            MessageBox.error(oBundle.getText("ERROR_LOAD_MODULE", ["HistoryFileExport.js", oErr.message || oErr]));
+                        const oBundle = that.getView().getModel("i18n").getResourceBundle();
+                        MessageBox.error(oBundle.getText("ERROR_LOAD_MODULE", ["HistoryFileExport.js", oErr.message || oErr]));
                     }
                 );
             },
 
             // ── Upload / Parse ──
 
-                      onFileChange: async function (oEvent) {
+            onFileChange: async function (oEvent) {
                 const oFile = oEvent.getParameter("files")?.[0];
                 const oModel = this.getView().getModel(UPLOAD_MODEL);
 
@@ -312,7 +313,7 @@ sap.ui.define(
                 return aErrors;
             },
 
-                        onShowRowError(oEvent) {
+            onShowRowError(oEvent) {
                 const oRow = oEvent.getSource().getBindingContext(UPLOAD_MODEL)?.getObject();
                 if (!oRow?.errors?.length) return;
                 ErrorDialog.handleErrorDialog(
@@ -332,9 +333,11 @@ sap.ui.define(
                 if (!s) return { value: "", error: "Document Date để trống" };
 
                 if (/^\d{5}$/.test(s)) {
-                    return { value: "", error:
-                        `Document Date đang là số serial của Excel (${s}). ` +
-                        `Định dạng ô về Text rồi nhập lại dạng DD/MM/YYYY.` };
+                    return {
+                        value: "", error:
+                            `Document Date đang là số serial của Excel (${s}). ` +
+                            `Định dạng ô về Text rồi nhập lại dạng DD/MM/YYYY.`
+                    };
                 }
 
                 const m = s.match(/^(\d{2})[/-](\d{2})[/-](\d{4})$/);
@@ -342,8 +345,10 @@ sap.ui.define(
 
                 if (/^\d{8}$/.test(s)) return { value: s, error: "" };
 
-                return { value: "", error:
-                    `Document Date "${s}" sai định dạng — phải là DD/MM/YYYY (vd 11/07/2026).` };
+                return {
+                    value: "", error:
+                        `Document Date "${s}" sai định dạng — phải là DD/MM/YYYY (vd 11/07/2026).`
+                };
             },
 
 
@@ -456,6 +461,7 @@ sap.ui.define(
                                     const oOperation = oContext.getModel().bindContext(
                                         ACTION_FQN_RETRY + "(...)", oContext
                                     );
+                                    oOperation.setParameter("user_email", await ApiService.getUserEmail());   // ← THÊM
                                     await oOperation.execute();
                                 }
                                 const oBundle = this.getView().getModel("i18n").getResourceBundle();
@@ -482,7 +488,7 @@ sap.ui.define(
                 this.onRefreshHistory();
             },
 
-              formatIsError(sStatus) {
+            formatIsError(sStatus) {
                 return sStatus === "E" || sStatus === "P";
             },
 
@@ -512,18 +518,19 @@ sap.ui.define(
                 this._showBusy();
                 try {
                     const oOperation = oContext.getModel().bindContext(ACTION_FQN_RETRY + "(...)", oContext);
+                    oOperation.setParameter("user_email", await ApiService.getUserEmail());   // ← THÊM
                     await oOperation.execute();
                     const oBundle = this.getView().getModel("i18n").getResourceBundle();
                     MessageToast.show(oBundle.getText("RETRY_SENT"));
                     this._refreshPendingAndHistory();
                 } catch (err) {
-                     MessageBox.error(this._extractError(err, "Lỗi khi Retry."));
+                    MessageBox.error(this._extractError(err, "Lỗi khi Retry."));
                 } finally {
                     this._closeBusy();
                 }
             },
 
-                        onRetrySelected: function () {
+            onRetrySelected: function () {
                 const aItems = this.byId("grHistoryTable").getSelectedItems();
                 const aContexts = aItems
                     .map((it) => it.getBindingContext("gr"))
@@ -551,7 +558,7 @@ sap.ui.define(
             },
 
             // ── Xem chi tiết item (dùng chung cho tab Chờ xử lý và Lịch sử) ──
-                       onShowItems: async function (oEvent) {
+            onShowItems: async function (oEvent) {
                 const oContext = oEvent.getParameter
                     ? oEvent.getParameter("listItem")?.getBindingContext("gr")
                     : null;
@@ -650,7 +657,22 @@ sap.ui.define(
 
                 return err.message || sFallback;
             },
-                        onShowAllErrors() {
+                  _loadAuth: async function () {
+                try {
+                    const oAuth = await ApiService.loadMyAuth(
+                        this.getOwnerComponent().getModel("gr")
+                    );
+                    if (oAuth.can_upload_gr === false) {
+                        this.byId(POST_BTN_ID)?.setVisible(false);
+                        this.byId(CHECK_BTN_ID)?.setVisible(false);
+                         this.byId("fileUploader")?.setEnabled(false);   // ← THÊM: khóa nút chọn file
+            this._bNoAuth = true; 
+                    }
+                } catch (e) {
+                    // Không đọc được quyền thì để nguyên nút — backend vẫn chặn
+                }
+            },
+            onShowAllErrors() {
                 if (!this._aRowErrors?.length) return;
                 ErrorDialog.handleErrorDialog(this._aRowErrors, this);
             },

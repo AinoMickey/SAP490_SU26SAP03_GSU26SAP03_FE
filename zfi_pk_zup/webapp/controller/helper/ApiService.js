@@ -171,6 +171,7 @@ sap.ui.define(
                     isupdate: isUpdate,
                     testmode: testMode,
                     filename: sFileName,
+                    useremail: await this.getUserEmail(),
                     doc: aDocs,
                 });
 
@@ -252,6 +253,7 @@ sap.ui.define(
                 const sPayloadJson = JSON.stringify({
                     filename: sFileName,
                     testmode: sTestMode,
+                    useremail: await this.getUserEmail(),
                     rows: aRows,
                 });
 
@@ -308,6 +310,7 @@ sap.ui.define(
 
                 const sPayloadJson = JSON.stringify({
                     filename: sFileName,
+                    useremail: await this.getUserEmail(),
                     doc: aDocs,
                 });
 
@@ -322,6 +325,41 @@ sap.ui.define(
                 const oResult = oOperation.getBoundContext().getObject();
                 return oResult || {};
             },
+
+            /**
+ * Đọc quyền upload của user hiện tại. Action đặt ở service GR nhưng trả quyền
+ * của cả ba phân hệ, nên FI và PP dùng chung, không cần sửa service của chúng.
+ */
+            loadMyAuth: async function (oGrModel) {
+                if (!oGrModel) return {};
+                const oOperation = oGrModel.bindContext(
+                    "/GrUpload/com.sap.gateway.srvd.zmm_ui_pogr_o4.v0001.getMyAuth(...)"
+                );
+                oOperation.setParameter("user_email", await this.getUserEmail());   // ← THÊM
+                await oOperation.execute();
+                return oOperation.getBoundContext().getObject() || {};
+            },
+
+            _sUserEmail: null,
+
+            /**
+             * Email người đang đăng nhập launchpad. Cache vì chỉ cần hỏi 1 lần.
+             * Chạy ngoài launchpad (BAS preview) trả rỗng — backend sẽ từ chối kèm lý do.
+             */
+            getUserEmail: async function () {
+                if (this._sUserEmail !== null) return this._sUserEmail;
+                this._sUserEmail = "";
+                try {
+                    if (typeof sap !== "undefined" && sap.ushell && sap.ushell.Container) {
+                        const oUserInfo = await sap.ushell.Container.getServiceAsync("UserInfo");
+                        this._sUserEmail = (oUserInfo.getEmail() || oUserInfo.getId() || "").toLowerCase();
+                    }
+                } catch (e) {
+                    this._sUserEmail = "";
+                }
+                return this._sUserEmail;
+            },
+
 
         };
     }
