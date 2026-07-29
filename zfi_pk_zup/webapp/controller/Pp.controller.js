@@ -22,7 +22,8 @@ sap.ui.define(
     ExcelParser,
     ApiService,
     ResultsDialog,
-    HistoryDetailDialog, // MỚI
+    xlsxBundle, // SỬA: trước đây THIẾU tham số này -> 11 dependency / 10 tham số,
+    HistoryDetailDialog, //  làm HistoryDetailDialog thực chất trỏ vào module xlsx.
   ) {
     "use strict";
 
@@ -56,6 +57,24 @@ sap.ui.define(
         return this.getView().getModel("pp");
       },
 
+      _getBundle() {
+        const oModel = this.getView().getModel("i18n");
+        return oModel ? oModel.getResourceBundle() : null;
+      },
+
+      /**
+       * getText trả về CHÍNH KEY khi thiếu entry trong i18n.properties,
+       * nên `getText(k) || fallback` không bao giờ chạy tới fallback mà
+       * đẩy thẳng tên key ra màn hình. Hàm này so với key nên fallback
+       * mới thật sự có tác dụng.
+       */
+      _t(sKey, aArgs, sFallback) {
+        const oBundle = this._getBundle();
+        if (!oBundle) return sFallback;
+        const s = oBundle.getText(sKey, aArgs);
+        return !s || s === sKey ? sFallback : s;
+      },
+
       // ── Navigation ──
 
       onNavBack() {
@@ -66,7 +85,9 @@ sap.ui.define(
 
       onDownloadTemplate() {
         PpExcelTemplate.download();
-        MessageToast.show("Template File Downloading...");
+        MessageToast.show(
+          this._t("TEMPLATE_LOADING", null, "Đang tải template..."),
+        );
       },
 
       // ── Upload / Parse ──
@@ -86,7 +107,7 @@ sap.ui.define(
         this._showBusy();
 
         try {
-          // (giữ nguyên nếu anh đã thêm) check trùng file
+          // check trùng file
           await ApiService.checkFileExistsPP(this._getPpModel(), oFile.name);
 
           const fileContent = await ExcelParser.readFile(oFile);
@@ -95,7 +116,7 @@ sap.ui.define(
             workbook.Sheets["Data"] || workbook.Sheets[workbook.SheetNames[0]];
           const excelData = XLSX.utils.sheet_to_row_object_array(oSheet);
 
-          // ══════════ KHỐI MỚI 1: nạp validator + check template ══════════
+          // ══════════ 1: nạp validator + check template ══════════
           const UploadValidator = await new Promise((res) =>
             sap.ui.require(["zfipkzup/controller/helper/UploadValidator"], res),
           );
@@ -111,11 +132,12 @@ sap.ui.define(
               [
                 {
                   type: "Error",
-                  title: "File không đúng template PP",
-                  description:
-                    "Thiếu cột: " +
-                    oTpl.missing.join(", ") +
-                    ". Vui lòng tải Template mới và điền lại.",
+                  title: this._t("EXCEL_TEMPLATE_INVALID", ["PP"],
+                    "File không đúng template PP"),
+                  description: this._t("TEMPLATE_MISSING_COLS",
+                    [oTpl.missing.join(", ")],
+                    "Thiếu cột: " + oTpl.missing.join(", ") +
+                    ". Vui lòng tải Template mới và điền lại."),
                 },
               ],
               this,
@@ -124,28 +146,30 @@ sap.ui.define(
             return;
           }
 
-          // ══════════ KHỐI MỚI 2: bóc label an toàn (THAY delete excelData[0]) ══════════
+          // ══════════ 2: bóc label an toàn (THAY delete excelData[0]) ══════════
           const oStrip = UploadValidator.stripLabelRow(excelData);
           const aPrepared = UploadValidator.prepareRows(
             oStrip.rows,
             oStrip.startRow,
           );
 
-          // check file rỗng CHUYỂN XUỐNG ĐÂY (check length<=1 cũ bỏ đi,
-          // vì user xóa label row thì file 1 dòng data vẫn hợp lệ)
+          // check file rỗng: user xóa label row thì file 1 dòng data vẫn hợp lệ
           if (aPrepared.length === 0) {
-            MessageToast.show("File không có dòng dữ liệu!");
+            MessageToast.show(
+              this._t("UPLOAD_NO_DATA", null, "File không có dòng dữ liệu!"),
+            );
             this._refreshTable();
             return;
           }
 
-          // ══════════ KHỐI MỚI 3: chặn syntax ══════════
+          // ══════════ 3: chặn syntax ══════════
           const aSynErrors = UploadValidator.validatePP(aPrepared);
           if (aSynErrors.length > 0) {
             ErrorDialog.handleErrorDialog(
               aSynErrors.map((e) => ({
                 type: "Error",
-                title: `Dòng Excel ${e.excelRow} - cột ${e.field}`,
+                title: this._t("EXCEL_ROW_COL", [e.excelRow, e.field],
+                  "Dòng Excel " + e.excelRow + " — cột " + e.field),
                 description: e.message,
               })),
               this,
@@ -160,24 +184,30 @@ sap.ui.define(
           oModel.setProperty("/items", this.dataUpload);
           this._autoSizeColumns(this.dataUpload);
 
-          // (các khối if result.invalidRows / MessageToast / enable nút... giữ nguyên)
           if (result.invalidRows.length > 0) {
             MessageBox.error(
-              "Sai định dạng ngày (DD/MM/YYYY) ở " +
-                result.invalidRows.length +
-                " dòng...",
+              this._t("PP_INVALID_DATE_ROWS",
+                [result.invalidRows.length, result.invalidRows.join(", ")],
+                "Sai định dạng ngày (DD/MM/YYYY) ở " +
+                result.invalidRows.length + " dòng: " +
+                result.invalidRows.join(", ")),
             );
             this.byId(POST_BTN_ID).setEnabled(false);
             this.byId(CHECK_BTN_ID).setEnabled(false);
           } else {
             MessageToast.show(
-              "Upload thành công " + this.dataUpload.length + " dòng",
+              this._t("UPLOAD_SUCCESS", [this.dataUpload.length],
+                "Tải lên thành công " + this.dataUpload.length + " dòng"),
             );
             this.byId(POST_BTN_ID).setEnabled(true);
             this.byId(CHECK_BTN_ID).setEnabled(true);
           }
         } catch (error) {
-          MessageBox.error(error?.message || "Upload failed or was cancelled.");
+          MessageBox.error(
+            error?.message ||
+              this._t("UPLOAD_CANCELLED", null,
+                "Tải lên bị hủy hoặc thất bại."),
+          );
           this.byId(POST_BTN_ID).setEnabled(false);
           this.byId(CHECK_BTN_ID).setEnabled(false);
         } finally {
@@ -191,6 +221,7 @@ sap.ui.define(
         const o = oCtx.getObject();
         const oRptModel = this.getOwnerComponent().getModel("rpt");
         const oView = this.getView();
+        const that = this;
 
         sap.ui.require(
           [
@@ -224,29 +255,33 @@ sap.ui.define(
 
             HistoryDetailDialog.open({
               view: oView,
-              title: "Chi tiết lệnh " + (oFull.ProductionOrder || ""),
+              title: that._t("PP_DETAIL_TITLE", [oFull.ProductionOrder || ""],
+                "Chi tiết lệnh " + (oFull.ProductionOrder || "")),
               record: oFull,
               fields: [
-                { key: "IdDoc", label: "ID" },
-                { key: "ProductionOrder", label: "Production Order" },
-                { key: "OrderStatus", label: "Trạng thái" },
-                { key: "ReleaseDate", label: "Release Date", type: "date" },
-                { key: "ProductionPlant", label: "Plant" },
-                { key: "Material", label: "Material" },
-                { key: "ProductionOrderType", label: "Order Type" },
-                { key: "ProductionVersion", label: "Production Version" },
-                { key: "TotalQty", label: "Total Qty", type: "num" },
-                { key: "BaseUnit", label: "Unit" },
-                { key: "StartDate", label: "Start Date", type: "date" },
-                { key: "EndDate", label: "End Date", type: "date" },
-                { key: "LeadTimeDays", label: "Lead time (ngày)", type: "num" },
-                { key: "SalesOrder", label: "Sales Order" },
-                { key: "SalesOrderItem", label: "SO Item" },
-                { key: "Filename", label: "Filename" },
-                { key: "PstDate", label: "Ngày post", type: "date" },
-                { key: "PstUser", label: "Người post" },
+                { key: "IdDoc", label: that._t("LBL_ID", null, "ID") },
+                { key: "ProductionOrder", label: that._t("LBL_PRODUCTION_ORDER", null, "Production Order") },
+                { key: "OrderStatus", label: that._t("LBL_ORDER_STATUS", null, "Trạng thái") },
+                { key: "ReleaseDate", label: that._t("LBL_RELEASE_DATE", null, "Release Date"), type: "date" },
+                { key: "ProductionPlant", label: that._t("LBL_PLANT", null, "Plant") },
+                { key: "Material", label: that._t("LBL_MATERIAL", null, "Material") },
+                { key: "ProductionOrderType", label: that._t("LBL_ORDER_TYPE", null, "Order Type") },
+                { key: "ProductionVersion", label: that._t("LBL_PRODUCTION_VERSION", null, "Production Version") },
+                { key: "TotalQty", label: that._t("LBL_TOTAL_QTY", null, "Total Qty"), type: "num" },
+                { key: "BaseUnit", label: that._t("LBL_UNIT", null, "Unit") },
+                { key: "StartDate", label: that._t("LBL_START_DATE", null, "Start Date"), type: "date" },
+                { key: "EndDate", label: that._t("LBL_END_DATE", null, "End Date"), type: "date" },
+                { key: "LeadTimeDays", label: that._t("LBL_LEAD_TIME", null, "Lead time (ngày)"), type: "num" },
+                { key: "SalesOrder", label: that._t("LBL_SALES_ORDER", null, "Sales Order") },
+                { key: "SalesOrderItem", label: that._t("LBL_SO_ITEM", null, "SO Item") },
+                { key: "Filename", label: that._t("LBL_FILENAME", null, "Filename") },
+                { key: "PstDate", label: that._t("LBL_PST_DATE", null, "Ngày post"), type: "date" },
+                { key: "PstUser", label: that._t("LBL_PST_USER", null, "Người post") },
               ],
-              copy: { label: "Copy số lệnh", value: oFull.ProductionOrder },
+              copy: {
+                label: that._t("COPY_ORDER_NO", null, "Copy số lệnh"),
+                value: oFull.ProductionOrder,
+              },
             });
           },
         );
@@ -262,7 +297,8 @@ sap.ui.define(
 
         if (!sFilename) {
           MessageBox.warning(
-            "Dòng này không có Filename trong log (lệnh tạo trước khi log lưu filename), không dựng lại file được.",
+            this._t("PP_NO_FILENAME", null,
+              "Dòng này không có Filename trong log (lệnh tạo trước khi log lưu filename), không dựng lại file được."),
           );
           return;
         }
@@ -276,19 +312,18 @@ sap.ui.define(
               const oRes = await HistoryFileExport.exportPp(
                 oPpModel,
                 sFilename,
-                {
-                  withRefs: true,
-                },
+                { withRefs: true },
               );
               MessageToast.show(
-                "Đã tạo " +
-                  oRes.file +
-                  " (" +
-                  oRes.rows +
-                  " lệnh). Cột longtext không có trong log.",
+                that._t("PP_CREATE_HISTORY_FILE", [oRes.file, oRes.rows],
+                  "Đã tạo " + oRes.file + " (" + oRes.rows +
+                  " lệnh). Cột longtext không có trong log."),
               );
             } catch (e) {
-              MessageBox.error("Không dựng được file: " + (e.message || e));
+              MessageBox.error(
+                that._t("ERROR_BUILD_FILE", [e.message || e],
+                  "Không dựng được file: " + (e.message || e)),
+              );
             } finally {
               that._closeBusy();
             }
@@ -296,7 +331,9 @@ sap.ui.define(
           function (oErr) {
             that._closeBusy();
             MessageBox.error(
-              "Không nạp được HistoryFileExport.js: " + (oErr.message || oErr),
+              that._t("ERROR_LOAD_MODULE",
+                ["HistoryFileExport.js", oErr.message || oErr],
+                "Không nạp được HistoryFileExport.js: " + (oErr.message || oErr)),
             );
           },
         );
@@ -313,6 +350,7 @@ sap.ui.define(
         const aData = [];
         const aInvalidRows = [];
         const iStartRow = 3; // data bắt đầu từ row 3 trong Excel
+        const sReady = this._t("PP_ROW_READY", null, "Ready");
 
         const normalizeKeys = (row) => {
           const out = {};
@@ -386,7 +424,7 @@ sap.ui.define(
             productionorder: "",
             exceptionIcon: "",
             exceptionState: ValueState.None,
-            exceptionText: "Ready",
+            exceptionText: sReady,
 
             // Trạng thái validate ngày phía client
             datestartState: oStart.valid ? ValueState.None : ValueState.Error,
@@ -414,7 +452,10 @@ sap.ui.define(
           (item) => item.exceptionState !== ValueState.Success,
         );
         if (aPending.length === 0) {
-          MessageToast.show("Tất cả dòng đã được post thành công.");
+          MessageToast.show(
+            this._t("ALL_POST_SUCCESS", null,
+              "Tất cả các dòng đã post thành công."),
+          );
           return;
         }
         try {
@@ -436,6 +477,10 @@ sap.ui.define(
       _callUpload: async function (sTestMode, aItems) {
         this._showBusy();
         try {
+          // Prevent double-submit
+          this.byId(POST_BTN_ID)?.setEnabled(false);
+          this.byId(CHECK_BTN_ID)?.setEnabled(false);
+
           const aRows = ApiService.buildPpRows(aItems);
           const oResponse = await ApiService.callActionUploadPP(
             this._getPpModel(),
@@ -445,13 +490,25 @@ sap.ui.define(
           );
 
           this._applyResults(oResponse.results, sTestMode);
-          ResultsDialog.show(this, oResponse.messages, sTestMode, POST_BTN_ID);
+
+          // Truyền thêm results để dải tổng hợp liệt kê được số lệnh sản xuất
+          ResultsDialog.show(
+            this,
+            oResponse.messages,
+            sTestMode,
+            POST_BTN_ID,
+            oResponse.results,
+          );
 
           // Post thật xong thì refresh tab Lịch sử
           if (sTestMode !== "X") {
             this.onRefreshHistory();
           }
         } catch (error) {
+          // Lỗi gọi service thì mở lại nút để thử lại
+          const bHasData = this.dataUpload.length > 0;
+          this.byId(CHECK_BTN_ID)?.setEnabled(bHasData);
+          this.byId(POST_BTN_ID)?.setEnabled(bHasData);
           MessageBox.error(error.message || JSON.stringify(error));
         } finally {
           this._closeBusy();
@@ -500,7 +557,9 @@ sap.ui.define(
 
       onClearUpload() {
         this._refreshTable();
-        MessageToast.show("Đã xóa dữ liệu upload");
+        MessageToast.show(
+          this._t("CLEAR_UPLOAD", null, "Đã xóa dữ liệu tải lên"),
+        );
       },
 
       // ── History ──

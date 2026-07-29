@@ -411,6 +411,22 @@
                                         />
                                     </table:template>
                                 </table:Column>
+                                                                <table:Column
+                                    id="grColBatch"
+                                    width="8rem"
+                                >
+                                    <Label
+                                        id="_gL11"
+                                        text="Batch"
+                                    />
+                                    <table:template>
+                                        <Text
+                                            id="_gT10"
+                                            text="{grModel>batch}"
+                                            wrapping="false"
+                                        />
+                                    </table:template>
+                                </table:Column>
                                 <table:Column
                                     id="grColSloc"
                                     width="9rem"

@@ -52,15 +52,18 @@ sap.ui.define(
             return s;
         }
 
-        function _copy(sText) {
+        function _copy(sText, oView) {
+            const oBundle = oView && oView.getModel && oView.getModel("i18n")
+                ? oView.getModel("i18n").getResourceBundle()
+                : null;
             if (!sText) {
-                MessageToast.show("Không có giá trị để copy");
+                MessageToast.show(oBundle ? oBundle.getText("COPY_NO_VALUE") : "Không có giá trị để copy");
                 return;
             }
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(sText).then(
-                    () => MessageToast.show("Đã copy: " + sText),
-                    () => MessageToast.show("Copy thất bại")
+                    () => MessageToast.show(oBundle ? oBundle.getText("COPY_SUCCESS", [sText]) : "Đã copy: " + sText),
+                    () => MessageToast.show(oBundle ? oBundle.getText("COPY_FAIL") : "Copy thất bại")
                 );
             } else {
                 // Fallback môi trường không có Clipboard API
@@ -70,9 +73,9 @@ sap.ui.define(
                 oTa.select();
                 try {
                     document.execCommand("copy");
-                    MessageToast.show("Đã copy: " + sText);
+                    MessageToast.show(oBundle ? oBundle.getText("COPY_SUCCESS", [sText]) : "Đã copy: " + sText);
                 } catch (e) {
-                    MessageToast.show("Copy thất bại");
+                    MessageToast.show(oBundle ? oBundle.getText("COPY_FAIL") : "Copy thất bại");
                 }
                 document.body.removeChild(oTa);
             }
@@ -170,11 +173,11 @@ sap.ui.define(
                         ? new Button({
                               icon: "sap-icon://copy",
                               text: oCfg.copy.label,
-                              press: () => _copy(String(oCfg.copy.value || "")),
+                              press: () => _copy(String(oCfg.copy.value || ""), oCfg.view),
                           })
                         : undefined,
                     endButton: new Button({
-                        text: "Đóng",
+                        text: (oCfg.view && oCfg.view.getModel("i18n") ? oCfg.view.getModel("i18n").getResourceBundle().getText("CLOSE") : "Đóng"),
                         press: () => oDialog.close(),
                     }),
                     afterClose: () => oDialog.destroy(),

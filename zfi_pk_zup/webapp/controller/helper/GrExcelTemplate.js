@@ -9,6 +9,7 @@ sap.ui.define([], function () {
     po_item: "PO Item*\n(Item của PO)",
     receive_qty: "Receive Qty*\n(Số lượng thực nhận, <= Open Qty)",
     unit: "Unit*\n(Phải khớp Order Unit của PO item)",
+    batch: "Batch",
     storage_location: "Storage Location*\n(Sloc nhận hàng)",
   };
 
@@ -40,16 +41,16 @@ sap.ui.define([], function () {
       const mappingHint = [
         [
           "gr_number", "document_date", "movement_type", "po_number",
-          "po_item", "receive_qty", "unit", "storage_location"
+          "po_item", "receive_qty", "unit", "batch", "storage_location"
         ],
         [
           "GR Number", "Document Date", "Movement Type", "PO Number",
-          "PO Item", "Receive Qty", "Unit", "Storage Location"
+          "PO Item", "Receive Qty", "Unit",  "batch", "Storage Location"
         ],
         [
           "Source column must match these fields", "Định dạng date DD/MM/YYYY",
           "Mặc định 101 nếu để trống", "PO đã release",
-          "Item của PO", "Số lượng thực nhận", "Đơn vị theo PO", "Storage location"
+          "Item của PO", "Số lượng thực nhận", "Đơn vị theo PO", "Mã Lô" , "Storage location"
         ]
       ];
       const sheet = XLSX.utils.aoa_to_sheet([headerKeys, headerLabels]);

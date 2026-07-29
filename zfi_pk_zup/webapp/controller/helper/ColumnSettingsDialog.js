@@ -105,6 +105,7 @@ sap.ui.define(
             },
 
             _create: function (oController) {
+                const oBundle = oController.getView().getModel("i18n").getResourceBundle();
                 const oModel = new JSONModel({ cols: [] });
                 oModel.setSizeLimit(200); // mặc định 100, ta có 88 cột + dư địa
 
@@ -131,7 +132,7 @@ sap.ui.define(
                 });
 
                 const oSelectAll = new CheckBox({
-                    text: "Chọn tất cả (theo kết quả lọc)",
+                    text: oBundle.getText ? oBundle.getText("SELECT_ALL_FILTERED") || "Chọn tất cả (theo kết quả lọc)" : "Chọn tất cả (theo kết quả lọc)",
                     select: function (oEvt) {
                         const bSel = oEvt.getParameter("selected");
                         // Chỉ tác động lên item đang hiển thị sau filter
@@ -172,7 +173,7 @@ sap.ui.define(
                     ],
                     buttons: [
                         new Button({
-                            text: "Mặc định",
+                            text: oBundle.getText("DEFAULT") || "Mặc định",
                             icon: "sap-icon://reset",
                             press: function () {
                                 const aDefault = ColumnConfig.getDefaultVisibleKeys();
@@ -184,7 +185,7 @@ sap.ui.define(
                             },
                         }),
                         new Button({
-                            text: "Áp dụng",
+                            text: oBundle.getText("APPLY") || "Áp dụng",
                             type: "Emphasized",
                             press: function () {
                                 const aSelected = oModel
@@ -193,7 +194,7 @@ sap.ui.define(
                                     .map(function (c) { return c.key; });
 
                                 if (aSelected.length === 0) {
-                                    MessageToast.show("Phải chọn ít nhất 1 cột");
+                                    MessageToast.show(oBundle.getText("MUST_SELECT_AT_LEAST") || "Phải chọn ít nhất 1 cột");
                                     return;
                                 }
                                 _save(aSelected);
@@ -204,7 +205,7 @@ sap.ui.define(
                             },
                         }),
                         new Button({
-                            text: "Hủy",
+                            text: oBundle.getText("CANCEL") || "Hủy",
                             press: function () { oDialog.close(); },
                         }),
                     ],

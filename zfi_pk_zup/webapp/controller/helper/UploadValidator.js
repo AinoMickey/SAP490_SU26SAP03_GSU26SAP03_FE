@@ -30,6 +30,12 @@
         "currency", "postingkey", "account", "amountindoumentcurrency",
     ];
 
+        var GR_REQUIRED_COLS = [
+        "gr_number", "document_date", "movement_type", "po_number",
+        "po_item", "receive_qty", "unit", "batch", "storage_location",
+    ];
+
+
     // Alias key template cũ (app cloud PP) -> key chuẩn
     var KEY_ALIASES = {
         startbasicdates: "datestart",
@@ -181,8 +187,10 @@
          * @param {'FI'|'PP'} sType
          * @returns {ok, missing[]}
          */
-        checkTemplate: function (aHeaderKeys, sType) {
-            var aReq = sType === "PP" ? PP_REQUIRED_COLS : FI_REQUIRED_COLS;
+         checkTemplate: function (aHeaderKeys, sType) {
+            var aReq = sType === "PP" ? PP_REQUIRED_COLS
+                     : sType === "GR" ? GR_REQUIRED_COLS
+                     : FI_REQUIRED_COLS;
             var oHave = {};
             (aHeaderKeys || []).forEach(function (k) {
                 var sKey = String(k || "").toLowerCase().trim();
@@ -421,5 +429,100 @@
 
             return aErrors;
         },
+
+                // ═══════════════ GR ═══════════════
+
+        /**
+         * Validate syntax GR: rule từng dòng + rule theo phiếu (gr_number).
+         * Nhiều dòng cùng gr_number sẽ gộp thành 1 phiếu nên phần header phải khớp nhau.
+         * @returns errors[{excelRow, field, message}]
+         */
+        validateGR: function (aPrepared) {
+            var aErrors = [];
+            var oHeaderSeen = {};   // gr_number -> { date, mvt, row }
+            var oLineSeen = {};     // gr_number|po|item -> row
+
+            aPrepared.forEach(function (o) {
+                var r = o.r, n = o.rowNo;
+
+                [["gr_number", 35, "GR Number"],
+                 ["unit", 3, "Unit"],
+                 ["storage_location", 4, "Storage Location"]].forEach(function (c) {
+                    var v = _s(r[c[0]]);
+                    if (v === "") err(aErrors, n, c[0], c[2] + " không được để trống");
+                    else if (v.length > c[1]) err(aErrors, n, c[0], c[2] + " '" + v + "' vượt quá " + c[1] + " ký tự");
+                });
+
+                var oDate = parseDate(r.document_date);
+                if (_s(r.document_date) === "") err(aErrors, n, "document_date", "Document Date không được để trống");
+                else if (!oDate.valid) err(aErrors, n, "document_date", dateErrText("Document Date", _s(r.document_date)));
+
+                                var sMvt = _s(r.movement_type);
+                if (sMvt !== "" && sMvt !== "101") {
+                    err(aErrors, n, "movement_type",
+                        "Movement Type '" + sMvt + "' chưa được hỗ trợ — chỉ nhận 101, để trống = 101");
+                }
+
+                if (oDate.valid) {
+                    var oToday = new Date();
+                    var iToday = oToday.getFullYear() * 10000 + (oToday.getMonth() + 1) * 100 + oToday.getDate();
+                    if (dateToNum(oDate.value) > iToday) {
+                        err(aErrors, n, "document_date", "Document Date " + oDate.value + " là ngày tương lai");
+                    }
+                }
+
+                if (_s(r.batch).length > 10) {
+                    err(aErrors, n, "batch", "Batch '" + _s(r.batch) + "' vượt quá 10 ký tự");
+                }
+
+                var sPo = _s(r.po_number), sItem = _s(r.po_item);
+                if (sPo === "") err(aErrors, n, "po_number", "PO Number không được để trống");
+                else if (!/^\d{1,10}$/.test(sPo)) err(aErrors, n, "po_number", "PO Number '" + sPo + "' phải là số tối đa 10 chữ số");
+                if (sItem === "") err(aErrors, n, "po_item", "PO Item không được để trống");
+                else if (!/^\d{1,5}$/.test(sItem)) err(aErrors, n, "po_item", "PO Item '" + sItem + "' phải là số tối đa 5 chữ số");
+
+                var sQty = _s(r.receive_qty);
+                if (sQty === "") {
+                    err(aErrors, n, "receive_qty", "Receive Qty không được để trống");
+                } else {
+                    var fQty = parseNumber(sQty);
+                    if (isNaN(fQty)) err(aErrors, n, "receive_qty", "Receive Qty '" + sQty + "' không phải là số");
+                    else if (fQty <= 0) err(aErrors, n, "receive_qty", "Receive Qty phải lớn hơn 0");
+                    else if (fQty > 999999999999) err(aErrors, n, "receive_qty", "Receive Qty quá lớn");
+                }
+
+                var sGr = _s(r.gr_number).toUpperCase();
+                if (sGr === "") return;
+
+                var sMvtEff = sMvt === "" ? "101" : sMvt;
+                if (!oHeaderSeen[sGr]) {
+                    oHeaderSeen[sGr] = { date: oDate.valid ? oDate.value : "", mvt: sMvtEff, row: n };
+                } else {
+                    var oFirst = oHeaderSeen[sGr];
+                    if (oDate.valid && oFirst.date !== "" && oDate.value !== oFirst.date) {
+                        err(aErrors, n, "document_date",
+                            "GR '" + sGr + "' có Document Date khác dòng Excel " + oFirst.row +
+                            " (" + oFirst.date + ") — các dòng cùng GR Number phải cùng ngày");
+                    }
+                    if (sMvtEff !== oFirst.mvt) {
+                        err(aErrors, n, "movement_type",
+                            "GR '" + sGr + "' có Movement Type khác dòng Excel " + oFirst.row + " (" + oFirst.mvt + ")");
+                    }
+                }
+
+                if (sPo !== "" && sItem !== "") {
+                    var sKey = sGr + "|" + sPo + "|" + sItem;
+                    if (oLineSeen[sKey]) {
+                        err(aErrors, n, "po_item",
+                            "PO " + sPo + "/" + sItem + " đã có ở dòng Excel " + oLineSeen[sKey] +
+                            " trong cùng GR '" + sGr + "'");
+                    } else {
+                        oLineSeen[sKey] = n;
+                    }
+                }
+            });
+            return aErrors;
+        },
+
     };
 });

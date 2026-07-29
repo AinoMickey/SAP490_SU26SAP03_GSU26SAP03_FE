@@ -48,13 +48,13 @@ sap.ui.define([
                     press: function () {
                         this.getParent().close();
                     },
-                    text: "Close",
+                    text: that.getView().getModel("i18n").getResourceBundle().getText("CLOSE") || "Đóng",
                 }),
                 customHeader: new Bar({
                     contentLeft: [oBackButton],
                     contentMiddle: [
                         new Title({
-                            text: "Lỗi",
+                            text: that.getView().getModel("i18n").getResourceBundle().getText("ERROR_DIALOG_TITLE") || "Thông báo lỗi",
                             level: TitleLevel.H1,
                         }),
                     ],

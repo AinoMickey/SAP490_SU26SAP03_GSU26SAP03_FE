@@ -34,9 +34,10 @@ sap.ui.define(
     ErrorDialog,
     ColumnConfig,
     ColumnSettingsDialog,
-    Filter, // MỚI
-    FilterOperator, // MỚI
-    HistoryDetailDialog, // MỚI
+    xlsxBundle, // SỬA: trước đây THIẾU tham số này -> 18 dependency / 17 tham số,
+    Filter, //     làm Filter/FilterOperator/HistoryDetailDialog trỏ lệch 1 ô.
+    FilterOperator, //  Chưa nổ vì mọi chỗ dùng đều nằm trong sap.ui.require lồng bên trong.
+    HistoryDetailDialog,
   ) {
     "use strict";
 
@@ -50,7 +51,13 @@ sap.ui.define(
 
       onInit() {
         this.getView().setModel(
-          new JSONModel({ items: [] }),
+          new JSONModel({
+            items: [],
+            // MỚI: trạng thái post hiện trên toolbar, còn lại sau khi đóng dialog
+            postState: "None", // None | Success | Warning | Error | Information
+            postText: this._t("STATUS_NOT_POSTED", null, "Chưa post"),
+            postDocs: "",
+          }),
           UPLOAD_TABLE_MODEL,
         );
         this._buildColumns();
@@ -65,6 +72,23 @@ sap.ui.define(
         return this.getView().getModel();
       },
 
+      _getBundle() {
+        const oModel = this.getView().getModel("i18n");
+        return oModel ? oModel.getResourceBundle() : null;
+      },
+
+      /**
+       * getText trả về CHÍNH KEY khi thiếu entry -> `getText(k) || fallback`
+       * không bao giờ chạy tới fallback mà đẩy tên key ra màn hình.
+       * Hàm này so với key nên fallback mới có tác dụng.
+       */
+      _t(sKey, aArgs, sFallback) {
+        const oBundle = this._getBundle();
+        if (!oBundle) return sFallback;
+        const s = oBundle.getText(sKey, aArgs);
+        return !s || s === sKey ? sFallback : s;
+      },
+
       // ── Dynamic Columns (88 cột từ ColumnConfig) ──
 
       /**
@@ -73,7 +97,7 @@ sap.ui.define(
        */
       _buildColumns() {
         const oTable = this.byId(UPLOAD_TABLE_ID);
-        oTable.destroyColumns(); 
+        oTable.destroyColumns();
         const aVisibleKeys = ColumnSettingsDialog.getInitialVisibleKeys();
 
         ColumnConfig.getColumns().forEach((c) => {
@@ -106,14 +130,20 @@ sap.ui.define(
         const aAll = ColumnConfig.getAllKeys();
         this._applyColumnVisibility(aAll);
         ColumnSettingsDialog.saveVisibleKeys(aAll);
-        MessageToast.show("Đang hiển thị tất cả 88 field");
+        MessageToast.show(
+          this._t("P13nHelper_ShowAll", [aAll.length],
+            "Đang hiển thị tất cả " + aAll.length + " field"),
+        );
       },
 
       /** Nút Setting: mở dialog chọn cột */
       openSetting() {
         ColumnSettingsDialog.open(this, (aSelectedKeys) => {
           this._applyColumnVisibility(aSelectedKeys);
-          MessageToast.show("Đã áp dụng " + aSelectedKeys.length + " cột");
+          MessageToast.show(
+            this._t("APPLY_COLUMNS", [aSelectedKeys.length],
+              "Đã áp dụng " + aSelectedKeys.length + " cột"),
+          );
         });
       },
 
@@ -127,7 +157,9 @@ sap.ui.define(
 
       onDownloadTemplate() {
         ExcelTemplate.download();
-        MessageToast.show("Template File Downloading...");
+        MessageToast.show(
+          this._t("TEMPLATE_LOADING", null, "Đang tải template..."),
+        );
       },
 
       // ── Upload ──
@@ -135,7 +167,7 @@ sap.ui.define(
       onFileChange: async function (oEvent) {
         const oFile =
           oEvent.getParameter("files") && oEvent.getParameter("files")[0];
-        const oModel = this.getView().getModel(UPLOAD_TABLE_MODEL); // tên model FI của anh
+        const oModel = this.getView().getModel(UPLOAD_TABLE_MODEL);
 
         if (!oFile) {
           this._refreshTable();
@@ -159,7 +191,7 @@ sap.ui.define(
             workbook.Sheets["Data"] || workbook.Sheets[workbook.SheetNames[0]];
           const excelData = XLSX.utils.sheet_to_row_object_array(oSheet);
 
-          // ══════════ MỚI 1: nạp validator + check template FI ══════════
+          // ══════════ 1: nạp validator + check template FI ══════════
           const UploadValidator = await new Promise((res) =>
             sap.ui.require(["zfipkzup/controller/helper/UploadValidator"], res),
           );
@@ -172,11 +204,12 @@ sap.ui.define(
               [
                 {
                   type: "Error",
-                  title: "File không đúng template FI",
-                  description:
-                    "Thiếu cột: " +
-                    oTpl.missing.join(", ") +
-                    ". Vui lòng tải Template mới và điền lại.",
+                  title: this._t("EXCEL_TEMPLATE_INVALID", ["FI"],
+                    "File không đúng template FI"),
+                  description: this._t("TEMPLATE_MISSING_COLS",
+                    [oTpl.missing.join(", ")],
+                    "Thiếu cột: " + oTpl.missing.join(", ") +
+                    ". Vui lòng tải Template mới và điền lại."),
                 },
               ],
               this,
@@ -185,27 +218,29 @@ sap.ui.define(
             return;
           }
 
-          // ══════════ MỚI 2: bóc label an toàn (THAY dòng delete excelData[0]) ══════════
+          // ══════════ 2: bóc label an toàn (THAY dòng delete excelData[0]) ══════════
           const oStrip = UploadValidator.stripLabelRow(excelData);
           const aPrepared = UploadValidator.prepareRows(
             oStrip.rows,
             oStrip.startRow,
           );
 
-          // thay cho check (excelData.length <= 1) cũ
           if (aPrepared.length === 0) {
-            MessageToast.show("File không có dòng dữ liệu!");
+            MessageToast.show(
+              this._t("UPLOAD_NO_DATA", null, "File không có dòng dữ liệu!"),
+            );
             this._refreshTable();
             return;
           }
 
-          // ══════════ MỚI 3: chặn syntax FI (row + doc-level) ══════════
+          // ══════════ 3: chặn syntax FI (row + doc-level) ══════════
           const aSynErrors = UploadValidator.validateFI(aPrepared);
           if (aSynErrors.length > 0) {
             ErrorDialog.handleErrorDialog(
               aSynErrors.map((e) => ({
                 type: "Error",
-                title: `Dòng Excel ${e.excelRow} - cột ${e.field}`,
+                title: this._t("EXCEL_ROW_COL", [e.excelRow, e.field],
+                  "Dòng Excel " + e.excelRow + " — cột " + e.field),
                 description: e.message,
               })),
               this,
@@ -220,20 +255,28 @@ sap.ui.define(
           );
           this.dataUpload = result.data;
           oModel.setProperty("/items", this.dataUpload);
-          this._buildColumns(); // các bước sẵn có của FI (build cột động...) giữ nguyên
+          this._buildColumns();
+
+          // MỚI: nạp file mới -> xóa trạng thái post của lần trước
+          this._resetPostStatus();
 
           MessageToast.show(
-            "Upload thành công " + this.dataUpload.length + " dòng",
+            this._t("UPLOAD_SUCCESS", [this.dataUpload.length],
+              "Tải lên thành công " + this.dataUpload.length + " dòng"),
           );
-          this.byId("postButton").setEnabled(true); // đúng id nút của FI
-          this.byId("checkButton").setEnabled(true);
+          this.byId(POST_BTN_ID).setEnabled(true);
+          this.byId(CHECK_BTN_ID).setEnabled(true);
         } catch (error) {
-          MessageBox.error(error?.message || "Upload failed or was cancelled.");
+          MessageBox.error(
+            error?.message ||
+              this._t("UPLOAD_CANCELLED", null,
+                "Tải lên bị hủy hoặc thất bại."),
+          );
         } finally {
           this._closeBusy();
         }
       },
-      
+
       onCheck(oEvent) {
         ApiService.checkFileExists(
           this._getODataModel(),
@@ -262,6 +305,9 @@ sap.ui.define(
           const groupedDocs = ApiService.groupDataByDocId(this.dataUpload);
           const aDocs = ApiService.buildAllDocs(groupedDocs);
           const isUpdate = this.isDocumentPosted ? "X" : "";
+          // Chặn double-click: tắt nút trong lúc gọi
+          this.byId(POST_BTN_ID)?.setEnabled(false);
+          this.byId(CHECK_BTN_ID)?.setEnabled(false);
 
           const oResponse = await ApiService.callActionUpload(
             oModel,
@@ -271,8 +317,22 @@ sap.ui.define(
             aDocs,
           );
 
-          ResultsDialog.show(this, oResponse.messages, sTestMode, POST_BTN_ID);
+          // MỚI: truyền thêm results để dialog liệt kê được số chứng từ,
+          //      nhận về bản tóm tắt để đổ ra ObjectStatus trên toolbar
+          const oSum = ResultsDialog.show(
+            this,
+            oResponse.messages,
+            sTestMode,
+            POST_BTN_ID,
+            oResponse.results,
+          );
+          this._applyPostStatus(oSum, sTestMode);
         } catch (error) {
+          // Lỗi gọi service thì mở lại nút để thử lại,
+          // không bắt người dùng chọn lại file
+          const bHasData = this.dataUpload.length > 0;
+          this.byId(CHECK_BTN_ID)?.setEnabled(bHasData);
+          this.byId(POST_BTN_ID)?.setEnabled(bHasData);
           MessageBox.error(error.message || JSON.stringify(error));
         } finally {
           this._closeBusy();
@@ -287,15 +347,62 @@ sap.ui.define(
       onClearUpload() {
         this._refreshTable();
         this.isDocumentPosted = false;
-        MessageToast.show("Đã xóa dữ liệu upload");
+        MessageToast.show(
+          this._t("CLEAR_UPLOAD", null, "Đã xóa dữ liệu tải lên"),
+        );
+      },
+
+      // ── Trạng thái post (MỚI) ──
+
+      /** Đổ kết quả Check/Post ra ObjectStatus trên toolbar */
+      _applyPostStatus(oSum, sTestMode) {
+        const oModel = this.getView().getModel(UPLOAD_TABLE_MODEL);
+        if (!oModel || !oSum) return;
+
+        let sText;
+        if (sTestMode === "X") {
+          sText =
+            oSum.err > 0
+              ? this._t("STATUS_CHECK_ERR", [oSum.err, oSum.total],
+                  "Kiểm tra: " + oSum.err + "/" + oSum.total + " lỗi")
+              : this._t("STATUS_CHECK_OK", [oSum.ok, oSum.total],
+                  "Kiểm tra: " + oSum.ok + "/" + oSum.total + " hợp lệ");
+        } else if (oSum.err === 0 && oSum.ok > 0) {
+          sText = this._t("STATUS_POSTED", [oSum.ok, oSum.total],
+            "Đã post " + oSum.ok + "/" + oSum.total + " chứng từ");
+        } else if (oSum.ok > 0) {
+          sText = this._t("STATUS_PARTIAL", [oSum.ok, oSum.total],
+            "Post một phần " + oSum.ok + "/" + oSum.total);
+        } else {
+          sText = this._t("STATUS_FAILED", [oSum.total],
+            "Post thất bại 0/" + oSum.total);
+        }
+
+        oModel.setProperty("/postState", oSum.state || "None");
+        oModel.setProperty("/postText", sText);
+        oModel.setProperty("/postDocs", oSum.docList || "");
+      },
+
+      /** Về trạng thái chưa post */
+      _resetPostStatus() {
+        const oModel = this.getView().getModel(UPLOAD_TABLE_MODEL);
+        if (!oModel) return;
+        oModel.setProperty("/postState", "None");
+        oModel.setProperty(
+          "/postText",
+          this._t("STATUS_NOT_POSTED", null, "Chưa post"),
+        );
+        oModel.setProperty("/postDocs", "");
       },
 
       // ── History ──
+
       onRefreshHistory() {
         const oTable = this.byId("historyTable");
         const oBinding = oTable && oTable.getBinding("items");
         if (oBinding) oBinding.refresh();
       },
+
       onHistoryItemPress: function (oEvent) {
         const oCtx = oEvent.getSource().getBindingContext();
         if (!oCtx) return;
@@ -357,9 +464,7 @@ sap.ui.define(
               items: oRptModel && {
                 model: oRptModel,
                 path: "/FIUploadItem",
-                filters: [
-                  new Filter("Filename", FilterOperator.EQ, o.filename),
-                ],
+                filters: [new Filter("Filename", FilterOperator.EQ, o.filename)],
                 sorterParams: { $orderby: "IdDoc,IdLine" },
                 title: "Bút toán",
                 columns: [
@@ -376,7 +481,7 @@ sap.ui.define(
           },
         );
       },
-      // ── UI Utilities ──
+
       onDownloadHistoryFile: function (oEvent) {
         const oCtx = oEvent.getSource().getBindingContext();
         if (!oCtx) return;
@@ -391,16 +496,24 @@ sap.ui.define(
           ["zfipkzup/controller/helper/HistoryFileExport"],
           async function (HistoryFileExport) {
             try {
-              const oRes = await HistoryFileExport.exportFi(oFiModel, sFilename, {
-                withRefs: true,
-              });
+              const oRes = await HistoryFileExport.exportFi(
+                oFiModel,
+                sFilename,
+                { withRefs: true },
+              );
               MessageToast.show(
-                "Đã tạo " + oRes.file + " (" + oRes.rows + " dòng bút toán)",
+                that._t("CREATE_HISTORY_FILE", [oRes.file, oRes.rows],
+                  "Đã tạo " + oRes.file + " (" + oRes.rows + " dòng)"),
               );
             } catch (e) {
+              // SỬA: trong callback function thường, `this` KHÔNG phải controller
+              // -> bản cũ gọi this.getView() ở đây ném TypeError và nuốt mất lỗi gốc.
               MessageBox.error(
-                "Không dựng được file: " + (e.message || e) +
-                  "\n\nKiểm tra: CDS ZFI_I_DIS_UP_I đã thêm field mới và đã publish lại chưa.",
+                that._t("ERROR_BUILD_FILE", [e.message || e],
+                  "Không dựng được file: " + (e.message || e)) +
+                  "\n\n" +
+                  that._t("ERROR_BUILD_FILE_HINT", null,
+                    "Kiểm tra: CDS ZFI_I_DIS_UP_I đã thêm field mới và đã publish lại chưa."),
               );
             } finally {
               that._closeBusy();
@@ -409,11 +522,15 @@ sap.ui.define(
           function (oErr) {
             that._closeBusy();
             MessageBox.error(
-              "Không nạp được HistoryFileExport.js: " + (oErr.message || oErr),
+              that._t("ERROR_LOAD_MODULE",
+                ["HistoryFileExport.js", oErr.message || oErr],
+                "Không nạp được HistoryFileExport.js: " + (oErr.message || oErr)),
             );
           },
         );
       },
+
+      // ── UI Utilities ──
 
       _showBusy() {
         const oBusy = this.byId("idBusyDialog");
@@ -437,6 +554,7 @@ sap.ui.define(
         this.byId(POST_BTN_ID).setEnabled(false);
         this.byId(CHECK_BTN_ID).setEnabled(false);
         this.byId("fileUploader")?.clear();
+        this._resetPostStatus(); // MỚI
       },
     });
   },

@@ -294,6 +294,7 @@ sap.ui.define(
                         poitem: _str(row.po_item),
                         quantity: _str(row.receive_qty),
                         baseunit: _str(row.unit),
+                        batch: _str(row.batch),
                         storagelocation: _str(row.storage_location),
                     });
                 });

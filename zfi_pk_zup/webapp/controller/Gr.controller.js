@@ -62,6 +62,8 @@ sap.ui.define(
 
             onDownloadTemplate() {
                 GrExcelTemplate.download();
+                const oBundle = this.getView().getModel("i18n").getResourceBundle();
+                MessageToast.show(oBundle.getText("TEMPLATE_LOADING"));
             },
             onToggleMappingPreview() {
                 const oModel = this.getView().getModel(UPLOAD_MODEL);
@@ -77,7 +79,8 @@ sap.ui.define(
                 if (!sBatchId) return;
                 if (navigator.clipboard?.writeText) {
                     navigator.clipboard.writeText(sBatchId);
-                    MessageToast.show("Đã copy Batch ID");
+                    const oBundle = this.getView().getModel("i18n").getResourceBundle();
+                    MessageToast.show(oBundle.getText("COPY_BATCH_ID"));
                 }
             },
             onHistoryTableUpdateFinished() {
@@ -103,23 +106,26 @@ sap.ui.define(
                     async function (HistoryFileExport) {
                         try {
                             const oRes = await HistoryFileExport.exportGr(oGrModel, sBatchId, { withRefs: true });
-                            MessageToast.show("Đã tạo " + oRes.file + " (" + oRes.rows + " dòng)");
+                            const oBundle = that.getView().getModel("i18n").getResourceBundle();
+                            MessageToast.show(oBundle.getText("CREATE_HISTORY_FILE", [oRes.file, oRes.rows]));
                         } catch (e) {
-                            MessageBox.error("Không dựng được file: " + (e.message || e));
+                            const oBundle = that.getView().getModel("i18n").getResourceBundle();
+                            MessageBox.error(oBundle.getText("ERROR_BUILD_FILE", [e.message || e]));
                         } finally {
                             that._closeBusy();
                         }
                     },
                     function (oErr) {
                         that._closeBusy();
-                        MessageBox.error("Không nạp được HistoryFileExport.js: " + (oErr.message || oErr));
+                            const oBundle = that.getView().getModel("i18n").getResourceBundle();
+                            MessageBox.error(oBundle.getText("ERROR_LOAD_MODULE", ["HistoryFileExport.js", oErr.message || oErr]));
                     }
                 );
             },
 
             // ── Upload / Parse ──
 
-            onFileChange: async function (oEvent) {
+                      onFileChange: async function (oEvent) {
                 const oFile = oEvent.getParameter("files")?.[0];
                 const oModel = this.getView().getModel(UPLOAD_MODEL);
 
@@ -137,15 +143,43 @@ sap.ui.define(
                     const excelData = XLSX.utils.sheet_to_row_object_array(oSheet, { defval: "" });
 
                     if (!excelData || excelData.length === 0) {
-                        MessageToast.show("File rỗng hoặc thiếu dữ liệu!");
+                        const oBundle = this.getView().getModel("i18n").getResourceBundle();
+                        MessageToast.show(oBundle.getText("UPLOAD_NO_DATA"));
                         this._refreshTable();
                         return;
                     }
 
-                    const bHasLabelRow = this._isLabelRow(excelData[0]);
-                    if (bHasLabelRow) excelData.shift();
+                    const UploadValidator = await new Promise((res) =>
+                        sap.ui.require(["zfipkzup/controller/helper/UploadValidator"], res),
+                    );
 
-                    const result = this._processRows(excelData, bHasLabelRow ? 3 : 2);
+                    const aHeader = XLSX.utils.sheet_to_json(oSheet, { header: 1 })[0] || [];
+                    const oTpl = UploadValidator.checkTemplate(aHeader, "GR");
+                    if (!oTpl.ok) {
+                        const oBundle = this.getView().getModel("i18n").getResourceBundle();
+                        ErrorDialog.handleErrorDialog([{
+                            type: "Error",
+                            title: oBundle.getText("EXCEL_TEMPLATE_INVALID", ["GR"]),
+                            description: "Thiếu cột: " + oTpl.missing.join(", ") +
+                                ". Vui lòng tải Template mới và điền lại.",
+                        }], this);
+                        this._refreshTable();
+                        return;
+                    }
+
+                    const oStrip = UploadValidator.stripLabelRow(excelData);
+                    const aPrepared = UploadValidator.prepareRows(oStrip.rows, oStrip.startRow);
+
+                    if (aPrepared.length === 0) {
+                        const oBundle = this.getView().getModel("i18n").getResourceBundle();
+                        MessageToast.show(oBundle.getText("UPLOAD_NO_DATA"));
+                        this._refreshTable();
+                        return;
+                    }
+
+                    const aSynErrors = UploadValidator.validateGR(aPrepared);
+                    const result = this._processRows(aPrepared, aSynErrors, UploadValidator);
+
                     this.dataUpload = result.data;
                     this._aRowErrors = result.errors;
                     oModel.setProperty("/items", this.dataUpload);
@@ -154,26 +188,20 @@ sap.ui.define(
                     oModel.setProperty("/summaryState", result.summaryState);
                     oModel.setProperty("/validPct", result.validPct);
 
-                    if (this.dataUpload.length === 0) {
-                        MessageToast.show("Không có dòng dữ liệu hợp lệ!");
-                        this.byId(POST_BTN_ID).setEnabled(false);
-                        this.byId(CHECK_BTN_ID).setEnabled(false);
-                        return;
-                    }
-
-                    if (result.errors.length > 0) {
+                    if (aSynErrors.length > 0) {
                         this.byId(POST_BTN_ID).setEnabled(false);
                         this.byId(CHECK_BTN_ID).setEnabled(false);
                         ErrorDialog.handleErrorDialog(result.errors, this);
                         return;
                     }
 
-
-                    MessageToast.show("Đọc thành công " + this.dataUpload.length + " dòng");
+                    const oBundle = this.getView().getModel("i18n").getResourceBundle();
+                    MessageToast.show(oBundle.getText("UPLOAD_SUCCESS", [this.dataUpload.length]));
                     this.byId(POST_BTN_ID).setEnabled(true);
                     this.byId(CHECK_BTN_ID).setEnabled(true);
                 } catch (err) {
-                    MessageBox.error(this._extractError(err, "Lỗi đọc file."));
+                    const oBundle = this.getView().getModel("i18n").getResourceBundle();
+                    MessageBox.error(this._extractError(err, oBundle.getText("UPLOAD_CANCELLED")));
                     this.byId(POST_BTN_ID).setEnabled(false);
                     this.byId(CHECK_BTN_ID).setEnabled(false);
                 } finally {
@@ -182,51 +210,54 @@ sap.ui.define(
                 }
             },
 
-                                 _processRows(excelData, iFirstExcelRow) {
-                const aData = [];
-                const _key = (row, k) => String(row[k] || row[k.toUpperCase()] || "").trim();
+            /**
+             * Ghép dữ liệu đã chuẩn hóa với danh sách lỗi cú pháp thành các dòng hiển thị.
+             */
+            _processRows(aPrepared, aSynErrors, UploadValidator) {
+                const mErrByRow = {};
+                aSynErrors.forEach((e) => {
+                    (mErrByRow[e.excelRow] = mErrByRow[e.excelRow] || []).push(e);
+                });
 
-                excelData.forEach((raw, i) => {
-                    if (!raw) return;
-                    if (!_key(raw, "po_number") && !_key(raw, "gr_number")) return;
-
-                    const oDate = this._parseDocDate(_key(raw, "document_date"));
-                    const oRow = {
-                        rowNo: iFirstExcelRow + i,
-                        gr_number: _key(raw, "gr_number"),
-                        document_date: oDate.value,
-                        movement_type: _key(raw, "movement_type") || "101",
-                        po_number: _key(raw, "po_number"),
-                        po_item: _key(raw, "po_item"),
-                        receive_qty: _key(raw, "receive_qty"),
-                        unit: _key(raw, "unit"),
-                        storage_location: _key(raw, "storage_location"),
+                const aData = aPrepared.map((o) => {
+                    const r = o.r;
+                    const oDate = UploadValidator.parseDate(r.document_date);
+                    const aErrors = mErrByRow[o.rowNo] || [];
+                    return {
+                        rowNo: o.rowNo,
+                        gr_number: String(r.gr_number || "").trim().toUpperCase(),
+                        // ABAP nhận YYYYMMDD
+                        document_date: oDate.valid
+                            ? oDate.value.substring(6) + oDate.value.substring(3, 5) + oDate.value.substring(0, 2)
+                            : "",
+                        movement_type: String(r.movement_type || "").trim() || "101",
+                        po_number: String(r.po_number || "").trim(),
+                        po_item: String(r.po_item || "").trim(),
+                        receive_qty: String(r.receive_qty || "").trim(),
+                        unit: String(r.unit || "").trim(),
+                        batch: String(r.batch || "").trim().toUpperCase(),
+                        storage_location: String(r.storage_location || "").trim(),
+                        errors: aErrors,
+                        ValidationStatus: aErrors.length ? "E" : "S",
+                        ValidationMessage: aErrors.map((e) => e.message).join(" · "),
                     };
-
-                    const aErrors = this._validateRow(oRow, oDate.error);
-                    oRow.errors = aErrors;
-                    oRow.ValidationStatus = aErrors.length ? "E" : "S";
-                    oRow.ValidationMessage = aErrors.map((e) => e.text).join(" · ");
-                    aData.push(oRow);
                 });
 
                 const iTotal = aData.length;
                 const iValid = aData.filter((r) => r.ValidationStatus === "S").length;
                 const iInvalid = iTotal - iValid;
-                const iErrorCount = aData.reduce((n, r) => n + r.errors.length, 0);
 
                 return {
                     data: aData,
-                    errors: aData.flatMap((r) => r.errors.map((e) => ({
+                    errors: aSynErrors.map((e) => ({
                         type: "Error",
-                        title: `Dòng ${r.rowNo} — cột ${e.column}`,
-                        subtitle: `GR ${r.gr_number || "(trống)"}`,
-                        description: e.text,
-                    }))),
-                    summary: { total: iTotal, valid: iValid, invalid: iInvalid, errorCount: iErrorCount },
+                        title: `Dòng Excel ${e.excelRow} — cột ${e.field}`,
+                        description: e.message,
+                    })),
+                    summary: { total: iTotal, valid: iValid, invalid: iInvalid, errorCount: aSynErrors.length },
                     summaryText: iInvalid === 0
                         ? `Tất cả ${iTotal} dòng hợp lệ`
-                        : `${iInvalid}/${iTotal} dòng có lỗi — tổng ${iErrorCount} lỗi`,
+                        : `${iInvalid}/${iTotal} dòng có lỗi — tổng ${aSynErrors.length} lỗi`,
                     summaryState: iInvalid === 0 ? "Success" : "Warning",
                     validPct: iTotal ? Math.round((iValid / iTotal) * 100) : 0,
                 };
@@ -281,19 +312,20 @@ sap.ui.define(
                 return aErrors;
             },
 
-            onShowRowError(oEvent) {
+                        onShowRowError(oEvent) {
                 const oRow = oEvent.getSource().getBindingContext(UPLOAD_MODEL)?.getObject();
                 if (!oRow?.errors?.length) return;
                 ErrorDialog.handleErrorDialog(
                     oRow.errors.map((e) => ({
                         type: "Error",
-                        title: `Cột ${e.column}`,
-                        subtitle: `Dòng Excel ${oRow.rowNo} — GR ${oRow.gr_number || "(trống)"}`,
-                        description: e.text,
+                        title: `Dòng Excel ${oRow.rowNo} — cột ${e.field}`,
+                        subtitle: `GR ${oRow.gr_number || "(trống)"}`,
+                        description: e.message,
                     })),
                     this
                 );
             },
+
 
             _parseDocDate(v) {
                 const s = String(v || "").trim();
@@ -323,21 +355,23 @@ sap.ui.define(
             },
 
             onPost() {
-                MessageBox.confirm(
-                    "Post GR sẽ tạo Material Document THẬT trong SAP ngay lập tức, không thể hoàn tác dễ dàng. Tiếp tục?",
-                    {
-                        title: "Xác nhận Post",
-                        onClose: (sAction) => {
-                            if (sAction === MessageBox.Action.OK) this._callUpload(false);
-                        }
+                const oBundle = this.getView().getModel("i18n").getResourceBundle();
+                MessageBox.confirm(oBundle.getText("CONFIRM_POST_TEXT_GR"), {
+                    title: oBundle.getText("CONFIRM_POST_TITLE"),
+                    onClose: (sAction) => {
+                        if (sAction === MessageBox.Action.OK) this._callUpload(false);
                     }
-                );
+                });
             },
 
             _callUpload: async function (bTestMode) {
                 this._showBusy();
                 try {
                     const aDocs = ApiService.buildGrDocs(this.dataUpload);
+                    // Prevent duplicate submissions
+                    this.byId(POST_BTN_ID)?.setEnabled(false);
+                    this.byId(CHECK_BTN_ID)?.setEnabled(false);
+
                     const oResult = await ApiService.callActionUploadGR(
                         this._getGrModel(), this.getCurrentFileName(), bTestMode, aDocs
                     );
@@ -360,11 +394,12 @@ sap.ui.define(
                     }
                     this.byId("grResultPanel").setVisible(true);
 
+                    const oBundle = this.getView().getModel("i18n").getResourceBundle();
                     if (bTestMode) {
-                        MessageToast.show("Check hoàn tất — xem tab 'Chờ xử lý' để post khi sẵn sàng.");
+                        MessageToast.show(oBundle.getText("CHECK_COMPLETE"));
                         this.onRefreshPending();
                     } else {
-                        MessageToast.show("Đã gửi " + (oResult.total_count || 0) + " GR, đang xử lý.");
+                        MessageToast.show(oBundle.getText("SENT_PROCESSING", [(oResult.total_count || 0), 'GR']));
                         this._refreshPendingAndHistory();
                     }
                 } catch (err) {
@@ -381,7 +416,8 @@ sap.ui.define(
             onClearUpload() {
                 this._refreshTable();
                 this.byId("grResultPanel").setVisible(false);
-                MessageToast.show("Đã xóa dữ liệu");
+                const oBundle = this.getView().getModel("i18n").getResourceBundle();
+                MessageToast.show(oBundle.getText("CLEAR_UPLOAD"));
             },
 
             // ── Tab Chờ xử lý ──
@@ -400,7 +436,8 @@ sap.ui.define(
                 const aItems = this.byId("grPendingTable").getSelectedItems();
                 const aContexts = aItems.map((it) => it.getBindingContext("gr"));
                 if (aContexts.length === 0) {
-                    MessageToast.show("Chưa chọn dòng nào.");
+                    const oBundle = this.getView().getModel("i18n").getResourceBundle();
+                    MessageToast.show(oBundle.getText("NO_ROW_SELECTED"));
                     return;
                 }
                 this._confirmAndPost(aContexts);
@@ -421,7 +458,8 @@ sap.ui.define(
                                     );
                                     await oOperation.execute();
                                 }
-                                MessageToast.show("Đã gửi Post — đang xử lý nền, xem tab Lịch sử sau vài giây.");
+                                const oBundle = this.getView().getModel("i18n").getResourceBundle();
+                                MessageToast.show(oBundle.getText("SENT_PROCESSING", [aContexts.length, 'GR']));
                                 this._refreshPendingAndHistory();
                             } catch (err) {
                                 MessageBox.error(this._extractError(err, "Lỗi khi Post."));
@@ -475,7 +513,8 @@ sap.ui.define(
                 try {
                     const oOperation = oContext.getModel().bindContext(ACTION_FQN_RETRY + "(...)", oContext);
                     await oOperation.execute();
-                    MessageToast.show("Đã gửi lại — đang xử lý nền.");
+                    const oBundle = this.getView().getModel("i18n").getResourceBundle();
+                    MessageToast.show(oBundle.getText("RETRY_SENT"));
                     this._refreshPendingAndHistory();
                 } catch (err) {
                      MessageBox.error(this._extractError(err, "Lỗi khi Retry."));
@@ -491,7 +530,8 @@ sap.ui.define(
                     .filter((ctx) => ctx && (ctx.getProperty("Status") === "E" || ctx.getProperty("Status") === "P"));
 
                 if (aContexts.length === 0) {
-                    MessageToast.show("Chưa chọn dòng Lỗi/Đang xử lý nào.");
+                    const oBundle = this.getView().getModel("i18n").getResourceBundle();
+                    MessageToast.show(oBundle.getText("NO_ERROR_SELECTED"));
                     return;
                 }
                 this._confirmAndPost(aContexts);
@@ -503,7 +543,8 @@ sap.ui.define(
                 const aContexts = await oBinding.requestContexts(0, 5000);
                 const aRows = aContexts.map((c) => c.getObject());
                 if (!aRows.length) {
-                    MessageToast.show("Không có dữ liệu để xuất");
+                    const oBundle = this.getView().getModel("i18n").getResourceBundle();
+                    MessageToast.show(oBundle.getText("NO_DATA_EXPORT"));
                     return;
                 }
                 GrHistoryExport.export(aRows);
