@@ -192,7 +192,7 @@ sap.ui.define(
                     ],
                     columns: [
                         { key: "DocType",   label: "Loại",         width: 8  },
-                        { key: "DocId",     label: "Mã chứng từ",  width: 16 },
+                        { key: "DocNumber", label: "Mã chứng từ",  width: 16 },
                         { key: "Status",    label: "Status",       width: 8  },
                         { key: "DocDate",   label: "Ngày chứng từ",width: 12, type: "date" },
                         { key: "BatchId",   label: "Batch/Filename", width: 30 },

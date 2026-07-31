@@ -130,7 +130,7 @@
                         <table:template><ObjectStatus id="_kpt_1" text="{rpt>DocType}" /></table:template>
                     </table:Column>
                     <table:Column id="_kpc2" width="12rem"><Label id="_kpl2" text="Mã chứng từ" />
-                        <table:template><Text id="_kpt_2" text="{rpt>DocId}" wrapping="false" /></table:template>
+                        <table:template><Text id="_kpt_2" text="{rpt>DocNumber}" wrapping="false" /></table:template>
                     </table:Column>
                     <table:Column id="_kpc3" width="9rem"><Label id="_kpl3" text="Status" />
                         <table:template>
