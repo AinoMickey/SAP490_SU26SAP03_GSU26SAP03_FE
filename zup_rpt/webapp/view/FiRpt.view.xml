@@ -5,164 +5,611 @@
     xmlns:f="sap.f"
     xmlns:core="sap.ui.core"
     xmlns:table="sap.ui.table"
-    displayBlock="true">
-
-    <Page id="fiRptPage" title="FI Upload Analytics" showNavButton="true" navButtonPress="onNavBack">
+    displayBlock="true"
+>
+    <Page
+        id="fiRptPage"
+        title="FI Upload Analytics"
+        showNavButton="true"
+        navButtonPress="onNavBack"
+    >
         <content>
-            <core:Fragment fragmentName="zuprpt.view.fragment.Busy" type="XML" />
+            <core:Fragment
+                fragmentName="zuprpt.view.fragment.Busy"
+                type="XML"
+            />
 
             <!-- ===== FILTER BAR ===== -->
-            <Panel id="fiFilterPanel" class="sapUiSmallMargin" width="auto">
+            <Panel
+                id="fiFilterPanel"
+                class="sapUiSmallMargin"
+                width="auto"
+            >
                 <content>
-                    <HBox id="_fiFilterBox" wrap="Wrap" alignItems="End">
-                        <VBox id="_fb1" class="sapUiTinyMarginEnd">
-                            <Label id="_fl1" text="Posting Date (log)" />
-                            <DateRangeSelection id="fiDateRange" width="18rem"
-                                displayFormat="dd/MM/yyyy" valueFormat="yyyy-MM-dd" />
+                    <HBox
+                        id="_fiFilterBox"
+                        wrap="Wrap"
+                        alignItems="End"
+                    >
+                        <VBox
+                            id="_fb1"
+                            class="sapUiTinyMarginEnd"
+                        >
+                            <Label
+                                id="_fl1"
+                                text="Posting Date (log)"
+                            />
+                            <DateRangeSelection
+                                id="fiDateRange"
+                                width="18rem"
+                                displayFormat="dd/MM/yyyy"
+                                valueFormat="yyyy-MM-dd"
+                            />
                         </VBox>
-                        <VBox id="_fb2" class="sapUiTinyMarginEnd">
-                            <Label id="_fl2" text="Company Code" />
-                            <Input id="fiCompanyCode" width="8rem" placeholder="vd: FU24" />
+                        <VBox
+                            id="_fb2"
+                            class="sapUiTinyMarginEnd"
+                        >
+                            <Label
+                                id="_fl2"
+                                text="Company Code"
+                            />
+                            <Input
+                                id="fiCompanyCode"
+                                width="8rem"
+                                placeholder="vd: FU24"
+                            />
                         </VBox>
-                        <VBox id="_fb3" class="sapUiTinyMarginEnd">
-                            <Label id="_fl3" text="Document Type" />
-                            <Input id="fiDocType" width="8rem" placeholder="vd: SA" />
+                        <VBox
+                            id="_fb3"
+                            class="sapUiTinyMarginEnd"
+                        >
+                            <Label
+                                id="_fl3"
+                                text="Document Type"
+                            />
+                            <Input
+                                id="fiDocType"
+                                width="8rem"
+                                placeholder="vd: SA"
+                            />
                         </VBox>
-                        <VBox id="_fb4" class="sapUiTinyMarginEnd">
-                            <Label id="_fl4" text="Filename (chứa)" />
-                            <Input id="fiFilename" width="14rem" placeholder="một phần tên file" />
+                        <VBox
+                            id="_fb4"
+                            class="sapUiTinyMarginEnd"
+                        >
+                            <Label
+                                id="_fl4"
+                                text="Filename (chứa)"
+                            />
+                            <Input
+                                id="fiFilename"
+                                width="14rem"
+                                placeholder="một phần tên file"
+                            />
                         </VBox>
-                        <Button id="fiBtnGo" text="Go" type="Emphasized" press="onGo"
-                            icon="sap-icon://search" class="sapUiTinyMarginEnd" />
-                        <Button id="fiBtnClear" text="Clear" press="onClearFilters"
-                            icon="sap-icon://clear-filter" />
+                        <VBox
+                            id="_fb5"
+                            class="sapUiTinyMarginEnd"
+                        >
+                            <Label
+                                id="_fl5"
+                                text="Loại tiền"
+                            />
+                            <Select
+                                id="fiCurrency"
+                                width="8rem"
+                                change="onGo"
+                            >
+                                <core:Item
+                                    key=""
+                                    text="Tất cả"
+                                />
+                            </Select>
+                        </VBox>
+                        <Button
+                            id="fiBtnGo"
+                            text="Go"
+                            type="Emphasized"
+                            press="onGo"
+                            icon="sap-icon://search"
+                            class="sapUiTinyMarginEnd"
+                        />
+                        <Button
+                            id="fiBtnClear"
+                            text="Clear"
+                            press="onClearFilters"
+                            icon="sap-icon://clear-filter"
+                        />
                     </HBox>
                 </content>
             </Panel>
 
             <!-- ===== KPI ===== -->
-            <f:GridContainer id="fiKpiGrid" class="sapUiSmallMarginBegin sapUiSmallMarginBottom">
+            <f:GridContainer
+                id="fiKpiGrid"
+                class="sapUiSmallMarginBegin sapUiSmallMarginBottom"
+            >
                 <f:layout>
-                    <f:GridContainerSettings id="_fkgcs" rowSize="5rem" columnSize="11rem" gap="0.75rem" />
+                    <f:GridContainerSettings
+                        id="_fkgcs"
+                        rowSize="5rem"
+                        columnSize="11rem"
+                        gap="0.75rem"
+                    />
                 </f:layout>
                 <f:items>
-                    <GenericTile id="_fk1" header="Tổng chứng từ" frameType="OneByOne">
-                        <tileContent><TileContent id="_fkt1">
-                            <NumericContent id="_fkn1" value="{rpt>/kpi/docCount}" withMargin="false"
-                                icon="sap-icon://documents" />
-                        </TileContent></tileContent>
+                    <GenericTile
+                        id="_fk1"
+                        header="Tổng chứng từ"
+                        frameType="OneByOne"
+                    >
+                        <tileContent>
+                            <TileContent id="_fkt1">
+                                <NumericContent
+                                    id="_fkn1"
+                                    value="{rpt>/kpi/docCount}"
+                                    withMargin="false"
+                                    icon="sap-icon://documents"
+                                />
+                            </TileContent>
+                        </tileContent>
                     </GenericTile>
-                    <GenericTile id="_fk2" header="Tổng file" frameType="OneByOne">
-                        <tileContent><TileContent id="_fkt2">
-                            <NumericContent id="_fkn2" value="{rpt>/kpi/fileCount}" withMargin="false"
-                                icon="sap-icon://attachment" />
-                        </TileContent></tileContent>
+                    <GenericTile
+                        id="_fk2"
+                        header="Tổng file"
+                        frameType="OneByOne"
+                    >
+                        <tileContent>
+                            <TileContent id="_fkt2">
+                                <NumericContent
+                                    id="_fkn2"
+                                    value="{rpt>/kpi/fileCount}"
+                                    withMargin="false"
+                                    icon="sap-icon://attachment"
+                                />
+                            </TileContent>
+                        </tileContent>
                     </GenericTile>
-                    <GenericTile id="_fk3" header="Tổng dòng bút toán" frameType="OneByOne">
-                        <tileContent><TileContent id="_fkt3">
-                            <NumericContent id="_fkn3" value="{rpt>/kpi/lineCount}" withMargin="false"
-                                icon="sap-icon://list" />
-                        </TileContent></tileContent>
+                    <GenericTile
+                        id="_fk3"
+                        header="Tổng dòng bút toán"
+                        frameType="OneByOne"
+                    >
+                        <tileContent>
+                            <TileContent id="_fkt3">
+                                <NumericContent
+                                    id="_fkn3"
+                                    value="{rpt>/kpi/lineCount}"
+                                    withMargin="false"
+                                    icon="sap-icon://list"
+                                />
+                            </TileContent>
+                        </tileContent>
                     </GenericTile>
-                    <GenericTile id="_fk4" header="Đã update lại" frameType="OneByOne">
-                        <tileContent><TileContent id="_fkt4">
-                            <NumericContent id="_fkn4" value="{rpt>/kpi/updCount}" withMargin="false"
-                                icon="sap-icon://refresh" />
-                        </TileContent></tileContent>
+                    <GenericTile
+                        id="_fk4"
+                        header="Đã update lại"
+                        frameType="OneByOne"
+                    >
+                        <tileContent>
+                            <TileContent id="_fkt4">
+                                <NumericContent
+                                    id="_fkn4"
+                                    value="{rpt>/kpi/updCount}"
+                                    withMargin="false"
+                                    icon="sap-icon://refresh"
+                                />
+                            </TileContent>
+                        </tileContent>
                     </GenericTile>
-                    <GenericTile id="_fk5" header="Tổng tiền Nợ (LC)" subheader="{rpt>/kpi/localCur}" frameType="TwoByOne">
-                        <tileContent><TileContent id="_fkt5">
-                            <NumericContent id="_fkn5" value="{rpt>/kpi/amountLC}" withMargin="false"
-                                icon="sap-icon://money-bills" />
-                        </TileContent></tileContent>
+                    <GenericTile
+                        id="_fk5"
+                        header="Tổng tiền Nợ"
+                        subheader="{rpt>/kpi/amountSub}"
+                        tooltip="{rpt>/kpi/byCurText}"
+                        press="onAmountTilePress"
+                        frameType="TwoByOne"
+                    >
+                        <tileContent>
+                            <TileContent id="_fkt5">
+                                <NumericContent
+                                    id="_fkn5"
+                                    value="{rpt>/kpi/amountLC}"
+                                    scale="{rpt>/kpi/amountScale}"
+                                    valueColor="{rpt>/kpi/amountState}"
+                                    truncateValueTo="10"
+                                    withMargin="false"
+                                    icon="sap-icon://money-bills"
+                                />
+                            </TileContent>
+                        </tileContent>
                     </GenericTile>
                 </f:items>
             </f:GridContainer>
 
             <!-- ===== CHART: chứng từ theo tháng ===== -->
-            <Panel id="fiChartPanel" class="sapUiSmallMargin" expandable="true" expanded="true" width="auto">
+            <Panel
+                id="fiChartPanel"
+                class="sapUiSmallMargin"
+                expandable="true"
+                expanded="true"
+                width="auto"
+            >
                 <headerToolbar>
                     <OverflowToolbar id="_ficTb">
-                        <Title id="_ficTitle" text="Phân tích nhanh" />
+                        <Title
+                            id="_ficTitle"
+                            text="Phân tích nhanh"
+                        />
                         <ToolbarSpacer id="_ficSp" />
-                        <Label id="_ficLblD" text="Nhóm theo:" class="sapUiTinyMarginEnd" />
-                        <Select id="fiChartDim" selectedKey="doctype" change="onChartConfigChange">
-                                <core:Item id="_ficd0" key="doctype" text="Document Type" />
-                                <core:Item id="_ficd1" key="company" text="Company Code" />
-                                <core:Item id="_ficd2" key="month" text="Tháng" />
+                        <Label
+                            id="_ficLblD"
+                            text="Nhóm theo:"
+                            class="sapUiTinyMarginEnd"
+                        />
+                        <Select
+                            id="fiChartDim"
+                            selectedKey="doctype"
+                            change="onChartConfigChange"
+                        >
+                            <core:Item
+                                id="_ficd0"
+                                key="doctype"
+                                text="Document Type"
+                            />
+                            <core:Item
+                                id="_ficd1"
+                                key="company"
+                                text="Company Code"
+                            />
+                            <core:Item
+                                id="_ficd2"
+                                key="month"
+                                text="Tháng"
+                            />
+                            <core:Item
+                                key="currency"
+                                text="Loại tiền"
+                            />
                         </Select>
-                        <Label id="_ficLblM" text="Giá trị:" class="sapUiTinyMarginBeginEnd" />
-                        <Select id="fiChartMeasure" selectedKey="count" change="onChartConfigChange">
-                                <core:Item id="_ficm0" key="count" text="Số chứng từ" />
-                                <core:Item id="_ficm1" key="amount" text="Tiền Nợ (LC)" />
+                        <Label
+                            id="_ficLblM"
+                            text="Giá trị:"
+                            class="sapUiTinyMarginBeginEnd"
+                        />
+                        <Select
+                            id="fiChartMeasure"
+                            selectedKey="count"
+                            change="onChartConfigChange"
+                        >
+                            <core:Item
+                                id="_ficm0"
+                                key="count"
+                                text="Số chứng từ"
+                            />
+                            <core:Item
+                                id="_ficm1"
+                                key="amount"
+                                text="Tiền Nợ (LC)"
+                            />
                         </Select>
                     </OverflowToolbar>
                 </headerToolbar>
                 <content>
-                    <ScrollContainer id="_fiChartScroll" horizontal="true" vertical="false" width="100%">
+                    <ScrollContainer
+                        id="_fiChartScroll"
+                        horizontal="true"
+                        vertical="false"
+                        width="100%"
+                    >
                         <core:HTML id="fiChartHtml" />
                     </ScrollContainer>
                 </content>
             </Panel>
 
             <!-- ===== TABLE (bấm mũi tên cuối dòng để xem bút toán) ===== -->
-            <table:Table id="fiRptTable"
+            <table:Table
+                id="fiRptTable"
                 selectionMode="None"
                 visibleRowCountMode="Interactive"
                 rowActionCount="1"
                 class="sapUiSmallMargin"
-                rows="{rpt>/rows}">
+                rows="{rpt>/rows}"
+            >
                 <table:rowActionTemplate>
                     <table:RowAction id="_fiRa">
-                        <table:RowActionItem id="_fiRai" type="Navigation" press="onShowItems"
-                            tooltip="Xem bút toán" />
+                        <table:RowActionItem
+                            id="_fiRai"
+                            type="Navigation"
+                            press="onShowItems"
+                            tooltip="Xem bút toán"
+                        />
                     </table:RowAction>
                 </table:rowActionTemplate>
                 <table:extension>
                     <OverflowToolbar id="_fiTb">
-                        <Title id="_fiTbTitle" text="Chứng từ FI ({rpt>/kpi/docCount})" />
+                        <Title
+                            id="_fiTbTitle"
+                            text="Chứng từ FI ({rpt>/kpi/docCount})"
+                        />
                         <ToolbarSpacer id="_fiTbSp" />
-                        <Button id="fiBtnExport" text="Xuất Excel" type="Accept"
-                            icon="sap-icon://excel-attachment" press="onExport" />
+                        <Button
+                            id="fiBtnExport"
+                            text="Xuất Excel"
+                            type="Accept"
+                            icon="sap-icon://excel-attachment"
+                            press="onExport"
+                        />
                     </OverflowToolbar>
                 </table:extension>
                 <table:noData>
-                    <IllustratedMessage id="_fiNoData" enableVerticalResponsiveness="true"
-                        title="Chưa có dữ liệu" description="Điều chỉnh bộ lọc rồi bấm Go" />
+                    <IllustratedMessage
+                        id="_fiNoData"
+                        enableVerticalResponsiveness="true"
+                        title="Chưa có dữ liệu"
+                        description="Điều chỉnh bộ lọc rồi bấm Go"
+                    />
                 </table:noData>
                 <table:columns>
-                    <table:Column id="_fc1" width="5rem"><Label id="_fcl1" text="ID" />
-                        <table:template><Text id="_fct1" text="{rpt>IdDoc}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_fc2" width="9rem"><Label id="_fcl2" text="Accounting Doc" />
-                        <table:template><Text id="_fct2" text="{rpt>AccountingDocument}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_fc3" width="6rem"><Label id="_fcl3" text="Fiscal Year" />
-                        <table:template><Text id="_fct3" text="{rpt>FiscalYear}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_fc4" width="7rem"><Label id="_fcl4" text="Company" />
-                        <table:template><Text id="_fct4" text="{rpt>CompanyCode}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_fc5" width="6rem"><Label id="_fcl5" text="Doc Type" />
-                        <table:template><Text id="_fct5" text="{rpt>DocumentType}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_fc6" width="8rem"><Label id="_fcl6" text="Doc Date" />
-                        <table:template><Text id="_fct6" text="{path: 'rpt>DocumentDate', formatter: '.formatter.date'}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_fc7" width="8rem"><Label id="_fcl7" text="Posting Date" />
-                        <table:template><Text id="_fct7" text="{path: 'rpt>PostingDate', formatter: '.formatter.date'}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_fc16" width="10rem" hAlign="End"><Label id="_fcl16" text="Tiền Nợ (LC)" />
-                        <table:template><Text id="_fct16" text="{path: 'rpt>TotalAmountLC', formatter: '.formatter.amount'}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_fc17" width="5rem"><Label id="_fcl17" text="LC Cur" />
-                        <table:template><Text id="_fct17" text="{rpt>LocalCurrency}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_fc9" width="14rem"><Label id="_fcl9" text="Header Text" />
-                        <table:template><Text id="_fct9" text="{rpt>HeaderText}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_fc10" width="6rem" hAlign="End"><Label id="_fcl10" text="Lines" />
-                        <table:template><Text id="_fct10" text="{rpt>LineCount}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_fc11" width="16rem"><Label id="_fcl11" text="Filename" />
-                        <table:template><Text id="_fct11" text="{rpt>Filename}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_fc12" width="8rem"><Label id="_fcl12" text="Pst Date" />
-                        <table:template><Text id="_fct12" text="{path: 'rpt>PstDate', formatter: '.formatter.date'}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_fc13" width="8rem"><Label id="_fcl13" text="Posted By" />
-                        <table:template><Text id="_fct13" text="{rpt>PstUser}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_fc14" width="8rem"><Label id="_fcl14" text="Upd Date" />
-                        <table:template><Text id="_fct14" text="{path: 'rpt>UpdDate', formatter: '.formatter.date'}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_fc15" width="8rem"><Label id="_fcl15" text="Upd By" />
-                        <table:template><Text id="_fct15" text="{rpt>UpdUser}" wrapping="false" /></table:template></table:Column>
+                    <table:Column
+                        id="_fc1"
+                        width="5rem"
+                    >
+                        <Label
+                            id="_fcl1"
+                            text="ID"
+                        />
+                        <table:template>
+                            <Text
+                                id="_fct1"
+                                text="{rpt>IdDoc}"
+                                wrapping="false"
+                            />
+                        </table:template>
+                    </table:Column>
+                    <table:Column
+                        id="_fc2"
+                        width="9rem"
+                    >
+                        <Label
+                            id="_fcl2"
+                            text="Accounting Doc"
+                        />
+                        <table:template>
+                            <Text
+                                id="_fct2"
+                                text="{rpt>AccountingDocument}"
+                                wrapping="false"
+                            />
+                        </table:template>
+                    </table:Column>
+                    <table:Column
+                        id="_fc3"
+                        width="6rem"
+                    >
+                        <Label
+                            id="_fcl3"
+                            text="Fiscal Year"
+                        />
+                        <table:template>
+                            <Text
+                                id="_fct3"
+                                text="{rpt>FiscalYear}"
+                                wrapping="false"
+                            />
+                        </table:template>
+                    </table:Column>
+                    <table:Column
+                        id="_fc4"
+                        width="7rem"
+                    >
+                        <Label
+                            id="_fcl4"
+                            text="Company"
+                        />
+                        <table:template>
+                            <Text
+                                id="_fct4"
+                                text="{rpt>CompanyCode}"
+                                wrapping="false"
+                            />
+                        </table:template>
+                    </table:Column>
+                    <table:Column
+                        id="_fc5"
+                        width="6rem"
+                    >
+                        <Label
+                            id="_fcl5"
+                            text="Doc Type"
+                        />
+                        <table:template>
+                            <Text
+                                id="_fct5"
+                                text="{rpt>DocumentType}"
+                                wrapping="false"
+                            />
+                        </table:template>
+                    </table:Column>
+                    <table:Column
+                        id="_fc6"
+                        width="8rem"
+                    >
+                        <Label
+                            id="_fcl6"
+                            text="Doc Date"
+                        />
+                        <table:template>
+                            <Text
+                                id="_fct6"
+                                text="{path: 'rpt>DocumentDate', formatter: '.formatter.date'}"
+                                wrapping="false"
+                            />
+                        </table:template>
+                    </table:Column>
+                    <table:Column
+                        id="_fc7"
+                        width="8rem"
+                    >
+                        <Label
+                            id="_fcl7"
+                            text="Posting Date"
+                        />
+                        <table:template>
+                            <Text
+                                id="_fct7"
+                                text="{path: 'rpt>PostingDate', formatter: '.formatter.date'}"
+                                wrapping="false"
+                            />
+                        </table:template>
+                    </table:Column>
+                    <table:Column
+                        id="_fc16"
+                        width="10rem"
+                        hAlign="End"
+                    >
+                        <Label
+                            id="_fcl16"
+                            text="Tiền Nợ (LC)"
+                        />
+                        <table:template>
+                            <Text
+                                id="_fct16"
+                                text="{path: 'rpt>TotalAmountLC', formatter: '.formatter.amount'}"
+                                wrapping="false"
+                            />
+                        </table:template>
+                    </table:Column>
+                    <table:Column
+                        id="_fc17"
+                        width="5rem"
+                    >
+                        <Label
+                            id="_fcl17"
+                            text="LC Cur"
+                        />
+                        <table:template>
+                            <Text
+                                id="_fct17"
+                                text="{rpt>LocalCurrency}"
+                                wrapping="false"
+                            />
+                        </table:template>
+                    </table:Column>
+                    <table:Column
+                        id="_fc9"
+                        width="14rem"
+                    >
+                        <Label
+                            id="_fcl9"
+                            text="Header Text"
+                        />
+                        <table:template>
+                            <Text
+                                id="_fct9"
+                                text="{rpt>HeaderText}"
+                                wrapping="false"
+                            />
+                        </table:template>
+                    </table:Column>
+                    <table:Column
+                        id="_fc10"
+                        width="6rem"
+                        hAlign="End"
+                    >
+                        <Label
+                            id="_fcl10"
+                            text="Lines"
+                        />
+                        <table:template>
+                            <Text
+                                id="_fct10"
+                                text="{rpt>LineCount}"
+                                wrapping="false"
+                            />
+                        </table:template>
+                    </table:Column>
+                    <table:Column
+                        id="_fc11"
+                        width="16rem"
+                    >
+                        <Label
+                            id="_fcl11"
+                            text="Filename"
+                        />
+                        <table:template>
+                            <Text
+                                id="_fct11"
+                                text="{rpt>Filename}"
+                                wrapping="false"
+                            />
+                        </table:template>
+                    </table:Column>
+                    <table:Column
+                        id="_fc12"
+                        width="8rem"
+                    >
+                        <Label
+                            id="_fcl12"
+                            text="Pst Date"
+                        />
+                        <table:template>
+                            <Text
+                                id="_fct12"
+                                text="{path: 'rpt>PstDate', formatter: '.formatter.date'}"
+                                wrapping="false"
+                            />
+                        </table:template>
+                    </table:Column>
+                    <table:Column
+                        id="_fc13"
+                        width="8rem"
+                    >
+                        <Label
+                            id="_fcl13"
+                            text="Posted By"
+                        />
+                        <table:template>
+                            <Text
+                                id="_fct13"
+                                text="{rpt>PstUser}"
+                                wrapping="false"
+                            />
+                        </table:template>
+                    </table:Column>
+                    <table:Column
+                        id="_fc14"
+                        width="8rem"
+                    >
+                        <Label
+                            id="_fcl14"
+                            text="Upd Date"
+                        />
+                        <table:template>
+                            <Text
+                                id="_fct14"
+                                text="{path: 'rpt>UpdDate', formatter: '.formatter.date'}"
+                                wrapping="false"
+                            />
+                        </table:template>
+                    </table:Column>
+                    <table:Column
+                        id="_fc15"
+                        width="8rem"
+                    >
+                        <Label
+                            id="_fcl15"
+                            text="Upd By"
+                        />
+                        <table:template>
+                            <Text
+                                id="_fct15"
+                                text="{rpt>UpdUser}"
+                                wrapping="false"
+                            />
+                        </table:template>
+                    </table:Column>
                 </table:columns>
             </table:Table>
         </content>
