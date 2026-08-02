@@ -288,7 +288,7 @@ sap.ui.define(
                     columns: [
                         { key: "ProductionOrder", label: "Production Order", width: 15 },
                         { key: "OrderStatus", label: "Trạng thái", width: 11 },
-                        { key: "ReleaseDate", label: "Release Date", width: 12, type: "date" },
+                        // { key: "ReleaseDate", label: "Release Date", width: 12, type: "date" },
                         { key: "IdDoc", label: "ID", width: 8 },
                         { key: "ProductionPlant", label: "Plant", width: 8 },
                         { key: "Material", label: "Material", width: 14 },

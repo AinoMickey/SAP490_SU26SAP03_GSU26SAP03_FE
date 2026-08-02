@@ -47,42 +47,51 @@
                     <GenericTile id="_gk1" header="Tổng GR" frameType="OneByOne">
                         <tileContent><TileContent id="_gkt1">
                             <NumericContent id="_gkn1" value="{rpt>/kpi/total}"
+                                truncateValueTo="8"
                                 withMargin="false" icon="sap-icon://inventory" />
                         </TileContent></tileContent>
                     </GenericTile>
                     <GenericTile id="_gk2" header="Thành công" frameType="OneByOne">
                         <tileContent><TileContent id="_gkt2">
                             <NumericContent id="_gkn2" value="{rpt>/kpi/success}"
+                                truncateValueTo="8"
                                 valueColor="Good" withMargin="false" icon="sap-icon://accept" />
                         </TileContent></tileContent>
                     </GenericTile>
                     <GenericTile id="_gk3" header="Lỗi" frameType="OneByOne">
                         <tileContent><TileContent id="_gkt3">
                             <NumericContent id="_gkn3" value="{rpt>/kpi/error}"
+                                truncateValueTo="8"
                                 valueColor="Critical" withMargin="false" icon="sap-icon://error" />
                         </TileContent></tileContent>
                     </GenericTile>
                     <GenericTile id="_gk4" header="Đang xử lý" frameType="OneByOne">
                         <tileContent><TileContent id="_gkt4">
                             <NumericContent id="_gkn4" value="{rpt>/kpi/pending}"
+                                truncateValueTo="8"
                                 valueColor="Neutral" withMargin="false" icon="sap-icon://pending" />
                         </TileContent></tileContent>
                     </GenericTile>
+                    <!-- SỬA: numberUnit không phải property của sap.m.NumericContent
+                         (console báo "unknown setting"). Đúng property là scale. -->
                     <GenericTile id="_gk5" header="Tỷ lệ Success" frameType="OneByOne">
                         <tileContent><TileContent id="_gkt5">
                             <NumericContent id="_gkn5" value="{rpt>/kpi/successRate}"
-                                numberUnit="%" valueColor="Good" withMargin="false" icon="sap-icon://accept" />
+                                scale="%" truncateValueTo="8"
+                                valueColor="Good" withMargin="false" icon="sap-icon://accept" />
                         </TileContent></tileContent>
                     </GenericTile>
                     <GenericTile id="_gk6" header="Tỷ lệ Error" frameType="OneByOne">
                         <tileContent><TileContent id="_gkt6">
                             <NumericContent id="_gkn6" value="{rpt>/kpi/errorRate}"
-                                numberUnit="%" valueColor="Critical" withMargin="false" icon="sap-icon://error" />
+                                scale="%" truncateValueTo="8"
+                                valueColor="Critical" withMargin="false" icon="sap-icon://error" />
                         </TileContent></tileContent>
                     </GenericTile>
                     <GenericTile id="_gk7" header="TG xử lý TB (giây)" frameType="OneByOne">
                         <tileContent><TileContent id="_gkt7">
                             <NumericContent id="_gkn7" value="{rpt>/kpi/avgSeconds}"
+                                truncateValueTo="8"
                                 valueColor="Neutral" withMargin="false" icon="sap-icon://history" />
                         </TileContent></tileContent>
                     </GenericTile>
@@ -128,28 +137,28 @@
                         title="Chưa có dữ liệu" description="Điều chỉnh bộ lọc rồi bấm Go" />
                 </table:noData>
                 <table:columns>
-                    <table:Column id="_grc1" width="10rem"><Label id="_gcl1" text="GR Number" />
+                    <table:Column id="_grc1" width="10rem" sortProperty="GrNumber"><Label id="_gcl1" text="GR Number" />
                         <table:template><Text id="_gct1" text="{rpt>GrNumber}" wrapping="false" /></table:template>
                     </table:Column>
-                    <table:Column id="_grc2" width="9rem"><Label id="_gcl2" text="Status" />
+                    <table:Column id="_grc2" width="9rem" sortProperty="Status"><Label id="_gcl2" text="Status" />
                         <table:template>
                             <ObjectStatus id="_gct2" text="{rpt>Status}"
                                 state="{path: 'rpt>StatusCriticality', formatter: '.formatter.criticalityToState'}" />
                         </table:template>
                     </table:Column>
-                    <table:Column id="_grc3" width="9rem"><Label id="_gcl3" text="Doc. Date" />
+                    <table:Column id="_grc3" width="9rem" sortProperty="DocumentDate"><Label id="_gcl3" text="Doc. Date" />
                         <table:template><Text id="_gct3" text="{path: 'rpt>DocumentDate', formatter: '.formatter.date'}" wrapping="false" /></table:template>
                     </table:Column>
-                    <table:Column id="_grc4" width="12rem"><Label id="_gcl4" text="Mat. Document" />
+                    <table:Column id="_grc4" width="12rem" sortProperty="MaterialDocument"><Label id="_gcl4" text="Mat. Document" />
                         <table:template><Text id="_gct4" text="{rpt>MaterialDocument}" wrapping="false" /></table:template>
                     </table:Column>
-                    <table:Column id="_grc5" width="20rem"><Label id="_gcl5" text="Message" />
+                    <table:Column id="_grc5" width="20rem" sortProperty="Message"><Label id="_gcl5" text="Message" />
                         <table:template><Text id="_gct5" text="{rpt>Message}" wrapping="false" /></table:template>
                     </table:Column>
-                    <table:Column id="_grc6" width="10rem"><Label id="_gcl6" text="Created By" />
+                    <table:Column id="_grc6" width="10rem" sortProperty="CreatedBy"><Label id="_gcl6" text="Created By" />
                         <table:template><Text id="_gct6" text="{rpt>CreatedBy}" wrapping="false" /></table:template>
                     </table:Column>
-                    <table:Column id="_grc7" width="12rem"><Label id="_gcl7" text="Created At" />
+                    <table:Column id="_grc7" width="12rem" sortProperty="CreatedAt"><Label id="_gcl7" text="Created At" />
                         <table:template><Text id="_gct7" text="{path: 'rpt>CreatedAt', formatter: '.formatter.date'}" wrapping="false" /></table:template>
                     </table:Column>
                 </table:columns>

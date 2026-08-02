@@ -56,30 +56,35 @@
                     <GenericTile id="_kpk1" header="Tổng số lô" frameType="OneByOne">
                         <tileContent><TileContent id="_kpkt1">
                             <NumericContent id="_kpkn1" value="{rpt>/kpi/total}"
+                                truncateValueTo="8"
                                 withMargin="false" icon="sap-icon://activity-items" />
                         </TileContent></tileContent>
                     </GenericTile>
                     <GenericTile id="_kpk2" header="Thành công" frameType="OneByOne">
                         <tileContent><TileContent id="_kpkt2">
                             <NumericContent id="_kpkn2" value="{rpt>/kpi/success}"
+                                truncateValueTo="8"
                                 valueColor="Good" withMargin="false" icon="sap-icon://accept" />
                         </TileContent></tileContent>
                     </GenericTile>
                     <GenericTile id="_kpk3" header="Lỗi" frameType="OneByOne">
                         <tileContent><TileContent id="_kpkt3">
                             <NumericContent id="_kpkn3" value="{rpt>/kpi/error}"
+                                truncateValueTo="8"
                                 valueColor="Critical" withMargin="false" icon="sap-icon://error" />
                         </TileContent></tileContent>
                     </GenericTile>
                     <GenericTile id="_kpk4" header="Đang xử lý" frameType="OneByOne">
                         <tileContent><TileContent id="_kpkt4">
                             <NumericContent id="_kpkn4" value="{rpt>/kpi/pending}"
+                                truncateValueTo="8"
                                 valueColor="Neutral" withMargin="false" icon="sap-icon://pending" />
                         </TileContent></tileContent>
                     </GenericTile>
                     <GenericTile id="_kpk5" header="TG xử lý TB (giây)" subheader="Chỉ tính GR" frameType="OneByOne">
                         <tileContent><TileContent id="_kpkt5">
                             <NumericContent id="_kpkn5" value="{rpt>/kpi/avgSeconds}"
+                                truncateValueTo="8"
                                 valueColor="Neutral" withMargin="false" icon="sap-icon://history" />
                         </TileContent></tileContent>
                     </GenericTile>
@@ -126,28 +131,28 @@
                         title="Chưa có dữ liệu" description="Điều chỉnh bộ lọc rồi bấm Go" />
                 </table:noData>
                 <table:columns>
-                    <table:Column id="_kpc1" width="6rem"><Label id="_kpl1" text="Loại" />
+                    <table:Column id="_kpc1" width="6rem" sortProperty="DocType"><Label id="_kpl1" text="Loại" />
                         <table:template><ObjectStatus id="_kpt_1" text="{rpt>DocType}" /></table:template>
                     </table:Column>
-                    <table:Column id="_kpc2" width="12rem"><Label id="_kpl2" text="Mã chứng từ" />
+                    <table:Column id="_kpc2" width="12rem" sortProperty="DocNumber"><Label id="_kpl2" text="Mã chứng từ" />
                         <table:template><Text id="_kpt_2" text="{rpt>DocNumber}" wrapping="false" /></table:template>
                     </table:Column>
-                    <table:Column id="_kpc3" width="9rem"><Label id="_kpl3" text="Status" />
+                    <table:Column id="_kpc3" width="9rem" sortProperty="Status"><Label id="_kpl3" text="Status" />
                         <table:template>
                             <ObjectStatus id="_kpt_3" text="{rpt>Status}"
                                 state="{path: 'rpt>Status', formatter: '.formatter.uploadStatusToState'}" />
                         </table:template>
                     </table:Column>
-                    <table:Column id="_kpc4" width="9rem"><Label id="_kpl4" text="Ngày chứng từ" />
+                    <table:Column id="_kpc4" width="9rem" sortProperty="DocDate"><Label id="_kpl4" text="Ngày chứng từ" />
                         <table:template><Text id="_kpt_4" text="{path: 'rpt>DocDate', formatter: '.formatter.date'}" wrapping="false" /></table:template>
                     </table:Column>
-                    <table:Column id="_kpc5" width="20rem"><Label id="_kpl5" text="Batch / Filename" />
+                    <table:Column id="_kpc5" width="20rem" sortProperty="BatchId"><Label id="_kpl5" text="Batch / Filename" />
                         <table:template><Text id="_kpt_5" text="{rpt>BatchId}" wrapping="false" /></table:template>
                     </table:Column>
-                    <table:Column id="_kpc6" width="20rem"><Label id="_kpl6" text="Message" />
+                    <table:Column id="_kpc6" width="20rem" sortProperty="Message"><Label id="_kpl6" text="Message" />
                         <table:template><Text id="_kpt_6" text="{rpt>Message}" wrapping="false" /></table:template>
                     </table:Column>
-                    <table:Column id="_kpc7" width="10rem"><Label id="_kpl7" text="Created By" />
+                    <table:Column id="_kpc7" width="10rem" sortProperty="CreatedBy"><Label id="_kpl7" text="Created By" />
                         <table:template><Text id="_kpt_7" text="{rpt>CreatedBy}" wrapping="false" /></table:template>
                     </table:Column>
                 </table:columns>

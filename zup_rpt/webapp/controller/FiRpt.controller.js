@@ -303,6 +303,7 @@ sap.ui.define(
             oSel.addItem(new Item({ key: x.cur, text: x.cur })),
           );
         }
+        aRows.forEach(r => { r.TotalAmountLC = Number(r.TotalAmountLC) || 0; });
       },
 
       _scaleAmount(fValue) {

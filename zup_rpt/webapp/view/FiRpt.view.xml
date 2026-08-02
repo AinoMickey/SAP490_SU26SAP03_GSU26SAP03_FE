@@ -149,6 +149,7 @@
                                 <NumericContent
                                     id="_fkn1"
                                     value="{rpt>/kpi/docCount}"
+                                    truncateValueTo="8"
                                     withMargin="false"
                                     icon="sap-icon://documents"
                                 />
@@ -165,6 +166,7 @@
                                 <NumericContent
                                     id="_fkn2"
                                     value="{rpt>/kpi/fileCount}"
+                                    truncateValueTo="8"
                                     withMargin="false"
                                     icon="sap-icon://attachment"
                                 />
@@ -181,6 +183,7 @@
                                 <NumericContent
                                     id="_fkn3"
                                     value="{rpt>/kpi/lineCount}"
+                                    truncateValueTo="8"
                                     withMargin="false"
                                     icon="sap-icon://list"
                                 />
@@ -197,6 +200,7 @@
                                 <NumericContent
                                     id="_fkn4"
                                     value="{rpt>/kpi/updCount}"
+                                    truncateValueTo="8"
                                     withMargin="false"
                                     icon="sap-icon://refresh"
                                 />
@@ -269,6 +273,7 @@
                                 text="Tháng"
                             />
                             <core:Item
+                                id="_ficd3"
                                 key="currency"
                                 text="Loại tiền"
                             />
@@ -355,6 +360,7 @@
                     <table:Column
                         id="_fc1"
                         width="5rem"
+                        sortProperty="IdDoc"
                     >
                         <Label
                             id="_fcl1"
@@ -371,6 +377,7 @@
                     <table:Column
                         id="_fc2"
                         width="9rem"
+                        sortProperty="AccountingDocument"
                     >
                         <Label
                             id="_fcl2"
@@ -387,6 +394,7 @@
                     <table:Column
                         id="_fc3"
                         width="6rem"
+                        sortProperty="FiscalYear"
                     >
                         <Label
                             id="_fcl3"
@@ -403,6 +411,7 @@
                     <table:Column
                         id="_fc4"
                         width="7rem"
+                        sortProperty="CompanyCode"
                     >
                         <Label
                             id="_fcl4"
@@ -419,6 +428,7 @@
                     <table:Column
                         id="_fc5"
                         width="6rem"
+                        sortProperty="DocumentType"
                     >
                         <Label
                             id="_fcl5"
@@ -435,6 +445,7 @@
                     <table:Column
                         id="_fc6"
                         width="8rem"
+                        sortProperty="DocumentDate"
                     >
                         <Label
                             id="_fcl6"
@@ -451,6 +462,7 @@
                     <table:Column
                         id="_fc7"
                         width="8rem"
+                        sortProperty="PostingDate"
                     >
                         <Label
                             id="_fcl7"
@@ -468,6 +480,7 @@
                         id="_fc16"
                         width="10rem"
                         hAlign="End"
+                        sortProperty="TotalAmountLC"
                     >
                         <Label
                             id="_fcl16"
@@ -484,6 +497,7 @@
                     <table:Column
                         id="_fc17"
                         width="5rem"
+                        sortProperty="LocalCurrency"
                     >
                         <Label
                             id="_fcl17"
@@ -500,6 +514,7 @@
                     <table:Column
                         id="_fc9"
                         width="14rem"
+                        sortProperty="HeaderText"
                     >
                         <Label
                             id="_fcl9"
@@ -517,6 +532,7 @@
                         id="_fc10"
                         width="6rem"
                         hAlign="End"
+                        sortProperty="LineCount"
                     >
                         <Label
                             id="_fcl10"
@@ -533,6 +549,7 @@
                     <table:Column
                         id="_fc11"
                         width="16rem"
+                        sortProperty="Filename"
                     >
                         <Label
                             id="_fcl11"
@@ -549,6 +566,7 @@
                     <table:Column
                         id="_fc12"
                         width="8rem"
+                        sortProperty="PstDate"
                     >
                         <Label
                             id="_fcl12"
@@ -565,6 +583,7 @@
                     <table:Column
                         id="_fc13"
                         width="8rem"
+                        sortProperty="PstUser"
                     >
                         <Label
                             id="_fcl13"
@@ -581,6 +600,7 @@
                     <table:Column
                         id="_fc14"
                         width="8rem"
+                        sortProperty="UpdDate"
                     >
                         <Label
                             id="_fcl14"
@@ -597,6 +617,7 @@
                     <table:Column
                         id="_fc15"
                         width="8rem"
+                        sortProperty="UpdUser"
                     >
                         <Label
                             id="_fcl15"

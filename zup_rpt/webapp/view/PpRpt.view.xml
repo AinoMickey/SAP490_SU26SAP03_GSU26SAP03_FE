@@ -59,31 +59,36 @@
                 <f:items>
                     <GenericTile id="_pk1" header="Tổng lệnh SX" frameType="OneByOne">
                         <tileContent><TileContent id="_pkt1">
-                            <NumericContent id="_pkn1" value="{rpt>/kpi/orderCount}" withMargin="false"
+                            <NumericContent id="_pkn1" value="{rpt>/kpi/orderCount}"
+                                truncateValueTo="8" withMargin="false"
                                 icon="sap-icon://factory" />
                         </TileContent></tileContent>
                     </GenericTile>
                     <GenericTile id="_pk2" header="Tổng số lượng" frameType="OneByOne">
                         <tileContent><TileContent id="_pkt2">
-                            <NumericContent id="_pkn2" value="{rpt>/kpi/totalQty}" withMargin="false"
+                            <NumericContent id="_pkn2" value="{rpt>/kpi/totalQty}"
+                                truncateValueTo="10" withMargin="false"
                                 icon="sap-icon://product" />
                         </TileContent></tileContent>
                     </GenericTile>
                     <GenericTile id="_pk3" header="Số plant" frameType="OneByOne">
                         <tileContent><TileContent id="_pkt3">
-                            <NumericContent id="_pkn3" value="{rpt>/kpi/plantCount}" withMargin="false"
+                            <NumericContent id="_pkn3" value="{rpt>/kpi/plantCount}"
+                                truncateValueTo="8" withMargin="false"
                                 icon="sap-icon://building" />
                         </TileContent></tileContent>
                     </GenericTile>
                     <GenericTile id="_pk4" header="Lead time TB (ngày)" frameType="OneByOne">
                         <tileContent><TileContent id="_pkt4">
-                            <NumericContent id="_pkn4" value="{rpt>/kpi/avgLeadTime}" withMargin="false"
+                            <NumericContent id="_pkn4" value="{rpt>/kpi/avgLeadTime}"
+                                truncateValueTo="8" withMargin="false"
                                 icon="sap-icon://date-time" />
                         </TileContent></tileContent>
                     </GenericTile>
                     <GenericTile id="_pk5" header="Đã release" subheader="Released trở lên" frameType="OneByOne">
                         <tileContent><TileContent id="_pkt5">
-                            <NumericContent id="_pkn5" value="{rpt>/kpi/releasedCount}" withMargin="false"
+                            <NumericContent id="_pkn5" value="{rpt>/kpi/releasedCount}"
+                                truncateValueTo="8" withMargin="false"
                                 icon="sap-icon://accept" />
                         </TileContent></tileContent>
                     </GenericTile>
@@ -137,42 +142,42 @@
                         title="Chưa có dữ liệu" description="Điều chỉnh bộ lọc rồi bấm Go" />
                 </table:noData>
                 <table:columns>
-                    <table:Column id="_pc1" width="10rem"><Label id="_pcl1" text="Production Order" />
+                    <table:Column id="_pc1" width="10rem" sortProperty="ProductionOrder"><Label id="_pcl1" text="Production Order" />
                         <table:template><Text id="_pct1" text="{rpt>ProductionOrder}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_pc17" width="8rem"><Label id="_pcl17" text="Trạng thái" />
+                    <table:Column id="_pc17" width="8rem" sortProperty="OrderStatus"><Label id="_pcl17" text="Trạng thái" />
                         <table:template><ObjectStatus id="_pct17" text="{rpt>OrderStatus}"
                             state="{path: 'rpt>OrderStatus', formatter: '.formatter.ppStatusState'}" /></table:template></table:Column>
-                    <table:Column id="_pc18" width="8rem"><Label id="_pcl18" text="Release Date" />
-                        <table:template><Text id="_pct18" text="{path: 'rpt>ReleaseDate', formatter: '.formatter.date'}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_pc2" width="5rem"><Label id="_pcl2" text="ID" />
+                    <!-- <table:Column id="_pc18" width="8rem" sortProperty="ReleaseDate"><Label id="_pcl18" text="Release Date" />
+                        <table:template><Text id="_pct18" text="{path: 'rpt>ReleaseDate', formatter: '.formatter.date'}" wrapping="false" /></table:template></table:Column> -->
+                    <table:Column id="_pc2" width="5rem" sortProperty="IdDoc"><Label id="_pcl2" text="ID" />
                         <table:template><Text id="_pct2" text="{rpt>IdDoc}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_pc3" width="6rem"><Label id="_pcl3" text="Plant" />
+                    <table:Column id="_pc3" width="6rem" sortProperty="ProductionPlant"><Label id="_pcl3" text="Plant" />
                         <table:template><Text id="_pct3" text="{rpt>ProductionPlant}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_pc4" width="10rem"><Label id="_pcl4" text="Material" />
+                    <table:Column id="_pc4" width="10rem" sortProperty="Material"><Label id="_pcl4" text="Material" />
                         <table:template><Text id="_pct4" text="{rpt>Material}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_pc5" width="7rem"><Label id="_pcl5" text="Order Type" />
+                    <table:Column id="_pc5" width="7rem" sortProperty="ProductionOrderType"><Label id="_pcl5" text="Order Type" />
                         <table:template><Text id="_pct5" text="{rpt>ProductionOrderType}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_pc6" width="6rem"><Label id="_pcl6" text="Version" />
+                    <table:Column id="_pc6" width="6rem" sortProperty="ProductionVersion"><Label id="_pcl6" text="Version" />
                         <table:template><Text id="_pct6" text="{rpt>ProductionVersion}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_pc7" width="7rem" hAlign="End"><Label id="_pcl7" text="Qty" />
+                    <table:Column id="_pc7" width="7rem" hAlign="End" sortProperty="TotalQty"><Label id="_pcl7" text="Qty" />
                         <table:template><Text id="_pct7" text="{path: 'rpt>TotalQty', formatter: '.formatter.qty'}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_pc8" width="5rem"><Label id="_pcl8" text="Unit" />
+                    <table:Column id="_pc8" width="5rem" sortProperty="BaseUnit"><Label id="_pcl8" text="Unit" />
                         <table:template><Text id="_pct8" text="{rpt>BaseUnit}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_pc9" width="8rem"><Label id="_pcl9" text="Start Date" />
+                    <table:Column id="_pc9" width="8rem" sortProperty="StartDate"><Label id="_pcl9" text="Start Date" />
                         <table:template><Text id="_pct9" text="{path: 'rpt>StartDate', formatter: '.formatter.date'}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_pc10" width="8rem"><Label id="_pcl10" text="End Date" />
+                    <table:Column id="_pc10" width="8rem" sortProperty="EndDate"><Label id="_pcl10" text="End Date" />
                         <table:template><Text id="_pct10" text="{path: 'rpt>EndDate', formatter: '.formatter.date'}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_pc11" width="7rem" hAlign="End"><Label id="_pcl11" text="Lead (ngày)" />
+                    <table:Column id="_pc11" width="7rem" hAlign="End" sortProperty="LeadTimeDays"><Label id="_pcl11" text="Lead (ngày)" />
                         <table:template><Text id="_pct11" text="{rpt>LeadTimeDays}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_pc12" width="9rem"><Label id="_pcl12" text="Sales Order" />
+                    <table:Column id="_pc12" width="9rem" sortProperty="SalesOrder"><Label id="_pcl12" text="Sales Order" />
                         <table:template><Text id="_pct12" text="{rpt>SalesOrder}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_pc13" width="7rem"><Label id="_pcl13" text="SO Item" />
+                    <table:Column id="_pc13" width="7rem" sortProperty="SalesOrderItem"><Label id="_pcl13" text="SO Item" />
                         <table:template><Text id="_pct13" text="{rpt>SalesOrderItem}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_pc14" width="16rem"><Label id="_pcl14" text="Filename" />
+                    <table:Column id="_pc14" width="16rem" sortProperty="Filename"><Label id="_pcl14" text="Filename" />
                         <table:template><Text id="_pct14" text="{rpt>Filename}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_pc15" width="8rem"><Label id="_pcl15" text="Pst Date" />
+                    <table:Column id="_pc15" width="8rem" sortProperty="PstDate"><Label id="_pcl15" text="Pst Date" />
                         <table:template><Text id="_pct15" text="{path: 'rpt>PstDate', formatter: '.formatter.date'}" wrapping="false" /></table:template></table:Column>
-                    <table:Column id="_pc16" width="8rem"><Label id="_pcl16" text="Posted By" />
+                    <table:Column id="_pc16" width="8rem" sortProperty="PstUser"><Label id="_pcl16" text="Posted By" />
                         <table:template><Text id="_pct16" text="{rpt>PstUser}" wrapping="false" /></table:template></table:Column>
                 </table:columns>
             </table:Table>
