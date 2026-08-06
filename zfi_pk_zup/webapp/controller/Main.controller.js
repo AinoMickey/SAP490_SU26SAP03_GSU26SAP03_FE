@@ -18,24 +18,54 @@ sap.ui.define(
             },
 
             _loadStats() {
-                const oModel = this.getView().getModel(); // V4 default
-                if (!oModel) return;
+                const oDefaultModel = this.getView().getModel(); // V4 default
+                if (!oDefaultModel) return;
+                const oPpModel = this.getView().getModel("pp");
+                const oGrModel = this.getView().getModel("gr");
                 const oStat = this.getView().getModel("stat");
 
-                const oListBinding = oModel.bindList("/UploadHistory", null, [], [], {
-                    $orderby: "pst_date desc",
-                });
-                oListBinding
-                    .requestContexts(0, 100)
-                    .then((aContexts) => {
-                        oStat.setProperty("/total", aContexts.length);
-                        if (aContexts.length > 0) {
-                            const oFirst = aContexts[0].getObject();
-                            oStat.setProperty("/lastFile", oFirst.filename || "—");
-                            const sDate = oFirst.pst_date;
+                const aSources = [
+                    {
+                        model: oDefaultModel,
+                        path: "/UploadHistory",
+                        dateField: "pst_date",
+                        fileField: "filename",
+                    },
+                    {
+                        model: oPpModel,
+                        path: "/UploadHistory",
+                        dateField: "StartDate",
+                        fileField: "Filename",
+                    },
+                    {
+                        model: oGrModel,
+                        path: "/GrUpload",
+                        dateField: "CreatedAt",
+                        fileField: "Filename",
+                    },
+                ];
+
+                Promise.all(
+                    aSources.map((oSource) => {
+                        if (!oSource.model) {
+                            return Promise.resolve({ count: 0, latest: null });
+                        }
+                        return this._loadSourceStats(oSource);
+                    })
+                )
+                    .then((aStats) => {
+                        const iTotal = aStats.reduce((sum, o) => sum + (o.count || 0), 0);
+                        const aLatest = aStats
+                            .map((o) => o.latest)
+                            .filter(Boolean)
+                            .sort((a, b) => this._compareDateDesc(a.date, b.date));
+
+                        oStat.setProperty("/total", iTotal);
+                        if (aLatest.length > 0) {
+                            oStat.setProperty("/lastFile", aLatest[0].file || "—");
                             oStat.setProperty(
                                 "/lastDate",
-                                sDate ? this._fmtDate(sDate) : "—"
+                                aLatest[0].date ? this._fmtDate(aLatest[0].date) : "—"
                             );
                         } else {
                             oStat.setProperty("/lastFile", "Chưa có");
@@ -43,8 +73,46 @@ sap.ui.define(
                         }
                     })
                     .catch(() => {
-                        // im lặng nếu lỗi đọc lịch sử - không chặn wrapper
+                        oStat.setProperty("/total", 0);
+                        oStat.setProperty("/lastFile", "Chưa có");
+                        oStat.setProperty("/lastDate", "—");
                     });
+            },
+
+            async _loadSourceStats(oSource) {
+                const oBinding = oSource.model.bindList(
+                    oSource.path,
+                    null,
+                    [],
+                    [],
+                    { $orderby: `${oSource.dateField} desc`, $count: true }
+                );
+
+                try {
+                    const aContexts = await oBinding.requestContexts(0, 1);
+                    const iCount =
+                        Number(
+                            await oBinding.getHeaderContext().requestProperty("$count")
+                        ) || 0;
+                    const oLatest = aContexts.length ? aContexts[0].getObject() : null;
+                    return {
+                        count: iCount,
+                        latest: oLatest
+                            ? {
+                                  date: oLatest[oSource.dateField],
+                                  file: oLatest[oSource.fileField] || "—",
+                              }
+                            : null,
+                    };
+                } catch (e) {
+                    return { count: 0, latest: null };
+                }
+            },
+
+            _compareDateDesc(sA, sB) {
+                const dA = new Date(sA).getTime() || 0;
+                const dB = new Date(sB).getTime() || 0;
+                return dB - dA;
             },
 
             _fmtDate(sDate) {

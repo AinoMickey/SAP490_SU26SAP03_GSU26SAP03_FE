@@ -14,7 +14,7 @@ sap.ui.define(
         "./xlsx/xlsx.bundle",
     ],
     function (Controller, MessageToast, JSONModel, MessageBox, Filter, FilterOperator,
-        GrExcelTemplate, ExcelParser, ApiService, GrHistoryExport, ErrorDialog) {
+        GrExcelTemplate, ExcelParser, ApiService, GrHistoryExport, ErrorDialog, xlsxBundle,) {
         "use strict";
 
         const UPLOAD_MODEL = "grModel";
@@ -253,17 +253,18 @@ sap.ui.define(
             // ── Upload / Parse ──
 
             onFileChange: async function (oEvent) {
-    const oFile = oEvent.getParameter("files")?.[0];
-    const oModel = this.getView().getModel(UPLOAD_MODEL);
+                const oFile = oEvent.getParameter("files")?.[0];
+                const oModel = this.getView().getModel(UPLOAD_MODEL);
 
-    if (!oFile) { this._refreshTable(); return; }
+                if (!oFile) { this._refreshTable(); return; }
 
-    this._sFileName = oFile.name || "";
-    this.dataUpload = [];
-    oModel.setProperty("/items", []);
-    this.getView().getModel("grResult").setData({});
-    this.byId("grResultPanel").setVisible(false);
-    this._showBusy();
+                this._sFileName = oFile.name || "";
+                this.dataUpload = [];
+                oModel.setProperty("/items", []);
+                this.getView().getModel("grResult").setData({});
+                this._aSapErrItems = [];
+                this.byId("grResultPanel").setVisible(false);
+                this._showBusy();
 
                 try {
                     await ApiService.checkFileExistsGR(this._getGrModel(), this._sFileName);
@@ -544,47 +545,49 @@ sap.ui.define(
                     const iTotal = oResult.total_count ?? oResult.TotalCount ?? 0;
 
                     const oResultModel = this.getView().getModel("grResult");
-                   if (bTestMode) {
-    oResultModel.setData({
-        ...oResult,
-        statusText: sStatus === "S" ? "Hợp lệ" :
-            sStatus === "E" ? "Lỗi" : "Đang xử lý",
-        statusState: sStatus === "S" ? "Success" :
-            sStatus === "E" ? "Error" : "Warning",
-    });
+                    if (bTestMode) {
+                        oResultModel.setData({
+                            ...oResult,
+                            hasSapErrors: this._aSapErrItems.length > 0,
+                            sapErrorCount: this._aSapErrItems.length,
+                            statusText: sStatus === "S" ? "Hợp lệ" :
+                                sStatus === "E" ? "Lỗi" : "Đang xử lý",
+                            statusState: sStatus === "S" ? "Success" :
+                                sStatus === "E" ? "Error" : "Warning",
+                        });
 
-    // Panel xanh ở trên chỉ là check cú pháp Excel — nếu SAP đã từ chối thật
-    // (period, PO, qty...) thì đây mới là verdict cuối, phải đồng bộ lại,
-    // không để xanh "100% hợp lệ" đứng cạnh đỏ "Lỗi" của cùng 1 lần Check.
-    if (sStatus === "E") {
-        const oGrModel = this.getView().getModel(UPLOAD_MODEL);
-        oGrModel.setProperty("/summaryText", "SAP từ chối: " + sMessage);
-        oGrModel.setProperty("/summaryState", "Error");
-    }
-}
+                        // Panel xanh ở trên chỉ là check cú pháp Excel — nếu SAP đã từ chối thật
+                        // (period, PO, qty...) thì đây mới là verdict cuối, phải đồng bộ lại,
+                        // không để xanh "100% hợp lệ" đứng cạnh đỏ "Lỗi" của cùng 1 lần Check.
+                        if (sStatus === "E") {
+                            const oGrModel = this.getView().getModel(UPLOAD_MODEL);
+                            oGrModel.setProperty("/summaryText", "SAP từ chối: " + sMessage);
+                            oGrModel.setProperty("/summaryState", "Error");
+                        }
+                    }
 
                     this.byId("grResultPanel").setVisible(true);
 
-                   // Tách lỗi theo từng dòng để hiện dialog chi tiết
+                    // Tách lỗi theo từng dòng để hiện dialog chi tiết
                     let aErrItems = [];
                     try {
                         const aAll = JSON.parse(oResult.items_json ?? oResult.ItemsJson ?? "[]") || [];
                         aErrItems = aAll.filter((it) => (it.status ?? it.Status) === "E");
                     } catch (e) { /* rỗng → fallback message */ }
 
+                    // Lưu để bấm mở lại popup sau khi đã đóng
+                    this._aSapErrItems = aErrItems.map((it) => ({
+                        type: "Error",
+                        title: `GR ${it.grNumber ?? it.GrNumber} — Item ${it.item ?? it.Item}` +
+                            ` (PO ${it.poNumber ?? it.PoNumber}/${it.poItem ?? it.PoItem})`,
+                        description: it.message ?? it.Message,
+                    }));
+
                     const oBundle = this.getView().getModel("i18n").getResourceBundle();
 
                     if (sStatus === "E") {
-                        if (aErrItems.length) {
-                            ErrorDialog.handleErrorDialog(
-                                aErrItems.map((it) => ({
-                                    type: "Error",
-                                    title: `GR ${it.grNumber ?? it.GrNumber} — Item ${it.item ?? it.Item}` +
-                                           ` (PO ${it.poNumber ?? it.PoNumber}/${it.poItem ?? it.PoItem})`,
-                                    description: it.message ?? it.Message,
-                                })),
-                                this
-                            );
+                        if (this._aSapErrItems.length) {
+                            ErrorDialog.handleErrorDialog(this._aSapErrItems, this);
                         } else {
                             MessageBox.error(sMessage || "Check thất bại.");
                         }
@@ -912,6 +915,18 @@ sap.ui.define(
             onShowAllErrors() {
                 if (!this._aRowErrors?.length) return;
                 ErrorDialog.handleErrorDialog(this._aRowErrors, this);
+            },
+
+            onShowSapErrors() {
+                if (!this._aSapErrItems?.length) {
+                    MessageToast.show("Không có lỗi SAP nào để xem.");
+                    return;
+                }
+                if (this.oDialog_Error) {
+                    this.oDialog_Error.open();
+                    return;
+                }
+                ErrorDialog.handleErrorDialog(this._aSapErrItems, this);
             },
 
         });

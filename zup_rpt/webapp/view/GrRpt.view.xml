@@ -88,13 +88,6 @@
                                 valueColor="Critical" withMargin="false" icon="sap-icon://error" />
                         </TileContent></tileContent>
                     </GenericTile>
-                    <GenericTile id="_gk7" header="TG xử lý TB (giây)" frameType="OneByOne">
-                        <tileContent><TileContent id="_gkt7">
-                            <NumericContent id="_gkn7" value="{rpt>/kpi/avgSeconds}"
-                                truncateValueTo="8"
-                                valueColor="Neutral" withMargin="false" icon="sap-icon://history" />
-                        </TileContent></tileContent>
-                    </GenericTile>
                 </f:items>
             </f:GridContainer>
 
@@ -105,18 +98,22 @@
                     <OverflowToolbar id="_grcTb">
                         <Title id="_grcTitle" text="Phân tích nhanh" />
                         <ToolbarSpacer id="_grcSp" />
-                        <Label id="_grcLblD" text="Nhóm theo:" class="sapUiTinyMarginEnd" />
-                        <Select id="grChartDim" selectedKey="status" change="onChartConfigChange">
-                            <core:Item id="_grcd0" key="status" text="Status" />
-                            <core:Item id="_grcd1" key="month" text="Tháng" />
-                            <core:Item id="_grcd2" key="user" text="Created By" />
-                        </Select>
+                        <Title id="_grcSubTitle" text="Stacked theo tháng + phân bố trạng thái" level="H6" />
                     </OverflowToolbar>
                 </headerToolbar>
                 <content>
-                    <ScrollContainer id="_grChartScroll" horizontal="true" vertical="false" width="100%">
-                        <core:HTML id="grChartHtml" />
-                    </ScrollContainer>
+                    <HBox fitContainer="true" justifyContent="SpaceBetween" alignItems="Start" class="sapUiSmallMargin" width="100%">
+                        <VBox width="72%" minWidth="520px">
+                            <ScrollContainer id="_grChartScroll" horizontal="true" vertical="false" width="100%" height="320px">
+                                <core:HTML id="grChartHtml" />
+                            </ScrollContainer>
+                        </VBox>
+                        <VBox width="26%" minWidth="260px">
+                            <ScrollContainer id="_grDonutScroll" horizontal="true" vertical="false" width="100%" height="320px">
+                                <core:HTML id="grDonutHtml" />
+                            </ScrollContainer>
+                        </VBox>
+                    </HBox>
                 </content>
             </Panel>
 
@@ -142,8 +139,8 @@
                     </table:Column>
                     <table:Column id="_grc2" width="9rem" sortProperty="Status"><Label id="_gcl2" text="Status" />
                         <table:template>
-                            <ObjectStatus id="_gct2" text="{rpt>Status}"
-                                state="{path: 'rpt>StatusCriticality', formatter: '.formatter.criticalityToState'}" />
+                            <ObjectStatus id="_gct2" text="{path: 'rpt>Status', formatter: '.formatter.grStatusText'}"
+                                state="{path: 'rpt>Status', formatter: '.formatter.uploadStatusToState'}" />
                         </table:template>
                     </table:Column>
                     <table:Column id="_grc3" width="9rem" sortProperty="DocumentDate"><Label id="_gcl3" text="Doc. Date" />

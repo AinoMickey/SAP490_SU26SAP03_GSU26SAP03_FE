@@ -136,11 +136,12 @@
           ]
         },
         {
-  "name": "RouteKpiRpt",
-  "pattern": "kpirpt",
-  "target": ["TargetKpiRpt"]
-}
-
+          "name": "RouteKpiRpt",
+          "pattern": "kpirpt",
+          "target": [
+            "TargetKpiRpt"
+          ]
+        }
       ],
       "targets": {
         "TargetMain": {
@@ -168,12 +169,11 @@
           "viewName": "GrRpt"
         },
         "TargetKpiRpt": {
-  "viewType": "XML",
-  "transition": "slide",
-  "viewId": "KpiRpt",
-  "viewName": "KpiRpt"
-}
-
+          "viewType": "XML",
+          "transition": "slide",
+          "viewId": "KpiRpt",
+          "viewName": "KpiRpt"
+        }
       }
     },
     "rootView": {

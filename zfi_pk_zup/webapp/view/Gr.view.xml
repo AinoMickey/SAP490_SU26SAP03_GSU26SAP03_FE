@@ -35,166 +35,175 @@
                         />
 
                         <Panel
-                            id="poLookupPanel"
-                            headerText="Check Open PO — kiểm tra PO còn mở trước khi nhập"
-                            expandable="true"
-                            expanded="false"
-                            class="sapUiSmallMargin"
-                        >
-                            <content>
-                                <OverflowToolbar id="poLookupFilterBar">
-                                    <Input
-                                        id="poLookupPoNumber"
-                                        placeholder="Số PO (để trống = tất cả)"
-                                        width="12rem"
-                                    />
-                                    <Input
-                                        id="poLookupPlant"
-                                        placeholder="Plant (để trống = tất cả)"
-                                        width="8rem"
-                                    />
-                                    <Input
-                                        id="poLookupMaterial"
-                                        placeholder="Material"
-                                        width="10rem"
-                                    />
-                                    <Input
-                                        id="poLookupVendor"
-                                        placeholder="Vendor"
-                                        width="9rem"
-                                    />
-                                    <Input
-                                        id="poLookupPurchGroup"
-                                        placeholder="Purch. Group"
-                                        width="7rem"
-                                    />
-                                    <Input
-                                        id="poLookupPurchOrg"
-                                        placeholder="Purch. Org"
-                                        width="7rem"
-                                    />
-                                    <DatePicker
-                                        id="poLookupDateFrom"
-                                        placeholder="PO Date từ"
-                                        width="9rem"
-                                    />
-                                    <DatePicker
-                                        id="poLookupDateTo"
-                                        placeholder="PO Date đến"
-                                        width="9rem"
-                                    />
-                                    <CheckBox
-                                        id="poLookupHideReceived"
-                                        text="Ẩn PO đã nhận đủ"
-                                        selected="true"
-                                    />
-                                    <Button
-                                        id="poLookupSearchBtn"
-                                        text="Tìm PO"
-                                        icon="sap-icon://search"
-                                        type="Emphasized"
-                                        press="onSearchOpenPO"
-                                    />
-                                    <ToolbarSpacer id="poLookupSpacer" />
-                                    <Button
-                                        id="poLookupTemplateBtn"
-                                        text="Tải Excel Template (đã chọn)"
-                                        icon="sap-icon://download"
-                                        press="onDownloadPrefilledTemplate"
-                                        enabled="{= ${poLookup>/selectedCount} > 0 }"
-                                    />
-                                </OverflowToolbar>
-                                <Table
-                                    id="poLookupTable"
-                                    items="{poLookup>/items}"
-                                    mode="MultiSelect"
-                                    selectionChange="onPoLookupSelectionChange"
-                                    growing="true"
-                                    growingThreshold="50"
-                                    noDataText="Nhập điều kiện rồi bấm Tìm PO"
-                                >
-                                    <columns>
-                                        <Column id="poLkColPo">
-                                            <Text text="PO" />
-                                        </Column>
-                                        <Column id="poLkColItem">
-                                            <Text text="Item" />
-                                        </Column>
-                                        <Column id="poLkColMat">
-                                            <Text text="Material" />
-                                        </Column>
-                                        <Column id="poLkColDesc">
-                                            <Text text="Mô tả" />
-                                        </Column>
-                                        <Column id="poLkColPlant">
-                                            <Text text="Plant" />
-                                        </Column>
-                                        <Column
-                                            id="poLkColOrderQty"
-                                            hAlign="End"
-                                        >
-                                            <Text text="Order Qty" />
-                                        </Column>
-                                        <Column
-                                            id="poLkColGrQty"
-                                            hAlign="End"
-                                        >
-                                            <Text text="GR Qty" />
-                                        </Column>
-                                        <Column
-                                            id="poLkColOpenQty"
-                                            hAlign="End"
-                                        >
-                                            <Text text="Open Qty" />
-                                        </Column>
-                                        <Column id="poLkColAction">
-                                            <Text text="" />
-                                        </Column>
-                                    </columns>
-                                    <items>
-                                        <ColumnListItem id="poLkItem">
-                                            <cells>
-                                                <Text
-                                                    text="{poLookup>PurchaseOrder}"
-                                                />
-                                                <Text
-                                                    text="{poLookup>PurchaseOrderItem}"
-                                                />
-                                                <Text
-                                                    text="{poLookup>Material}"
-                                                />
-                                                <Text
-                                                    text="{poLookup>ShortText}"
-                                                />
-                                                <Text text="{poLookup>Plant}" />
-                                                <ObjectNumber
-                                                    number="{poLookup>OrderQuantity}"
-                                                    unit="{poLookup>OrderUnit}"
-                                                />
-                                                <ObjectNumber
-                                                    number="{poLookup>GoodsReceiptQuantity}"
-                                                    unit="{poLookup>OrderUnit}"
-                                                />
-                                                <ObjectNumber
-                                                    number="{poLookup>OpenQuantity}"
-                                                    unit="{poLookup>OrderUnit}"
-                                                    state="{= ${poLookup>OpenQuantity} > 0 ? 'Success' : 'Error' }"
-                                                />
-                                                <Button
-                                                    id="poLkBtnCreate"
-                                                    text="Tạo GR"
-                                                    type="Transparent"
-                                                    icon="sap-icon://add-document"
-                                                    enabled="{= ${poLookup>OpenQuantity} > 0 }"
-                                                    press="onOpenCreateFromPO"
-                                                />
-                                            </cells>
-                                        </ColumnListItem>
-                                    </items>
-                                </Table>
-                            </content>
-                        </Panel>
-
+    id="poLookupPanel"
+    headerText="Check Open PO — kiểm tra PO còn mở trước khi nhập"
+    expandable="true"
+    expanded="false"
+    class="sapUiSmallMargin"
+>
+    <content>
+        <OverflowToolbar id="poLookupFilterBar">
+            <Input
+                id="poLookupPoNumber"
+                placeholder="Số PO (để trống = tất cả)"
+                width="12rem"
+            />
+            <Input
+                id="poLookupPlant"
+                placeholder="Plant (để trống = tất cả)"
+                width="8rem"
+            />
+            <Input
+                id="poLookupMaterial"
+                placeholder="Material"
+                width="10rem"
+            />
+            <Input
+                id="poLookupVendor"
+                placeholder="Vendor"
+                width="9rem"
+            />
+            <Input
+                id="poLookupPurchGroup"
+                placeholder="Purch. Group"
+                width="7rem"
+            />
+            <Input
+                id="poLookupPurchOrg"
+                placeholder="Purch. Org"
+                width="7rem"
+            />
+            <DatePicker
+                id="poLookupDateFrom"
+                placeholder="PO Date từ"
+                width="9rem"
+            />
+            <DatePicker
+                id="poLookupDateTo"
+                placeholder="PO Date đến"
+                width="9rem"
+            />
+            <CheckBox
+                id="poLookupHideReceived"
+                text="Ẩn PO đã nhận đủ"
+                selected="true"
+            />
+            <Button
+                id="poLookupSearchBtn"
+                text="Tìm PO"
+                icon="sap-icon://search"
+                type="Emphasized"
+                press="onSearchOpenPO"
+            />
+            <ToolbarSpacer id="poLookupSpacer" />
+            <Button
+                id="poLookupTemplateBtn"
+                text="Tải Excel Template (đã chọn)"
+                icon="sap-icon://download"
+                press="onDownloadPrefilledTemplate"
+                enabled="{= ${poLookup>/selectedCount} > 0 }"
+            />
+        </OverflowToolbar>
+        <Table
+            id="poLookupTable"
+            items="{poLookup>/items}"
+            mode="MultiSelect"
+            selectionChange="onPoLookupSelectionChange"
+            growing="true"
+            growingThreshold="50"
+            noDataText="Nhập điều kiện rồi bấm Tìm PO"
+        >
+            <columns>
+                <Column id="poLkColPo">
+                    <Text id="poLkHdrPo" text="PO" />
+                </Column>
+                <Column id="poLkColItem">
+                    <Text id="poLkHdrItem" text="Item" />
+                </Column>
+                <Column id="poLkColMat">
+                    <Text id="poLkHdrMat" text="Material" />
+                </Column>
+                <Column id="poLkColDesc">
+                    <Text id="poLkHdrDesc" text="Mô tả" />
+                </Column>
+                <Column id="poLkColPlant">
+                    <Text id="poLkHdrPlant" text="Plant" />
+                </Column>
+                <Column
+                    id="poLkColOrderQty"
+                    hAlign="End"
+                >
+                    <Text id="poLkHdrOrderQty" text="Order Qty" />
+                </Column>
+                <Column
+                    id="poLkColGrQty"
+                    hAlign="End"
+                >
+                    <Text id="poLkHdrGrQty" text="GR Qty" />
+                </Column>
+                <Column
+                    id="poLkColOpenQty"
+                    hAlign="End"
+                >
+                    <Text id="poLkHdrOpenQty" text="Open Qty" />
+                </Column>
+                <Column id="poLkColAction">
+                    <Text id="poLkHdrAction" text="" />
+                </Column>
+            </columns>
+            <items>
+                <ColumnListItem id="poLkItem">
+                    <cells>
+                        <Text
+                            id="poLkCellPo"
+                            text="{poLookup>PurchaseOrder}"
+                        />
+                        <Text
+                            id="poLkCellItem"
+                            text="{poLookup>PurchaseOrderItem}"
+                        />
+                        <Text
+                            id="poLkCellMat"
+                            text="{poLookup>Material}"
+                        />
+                        <Text
+                            id="poLkCellDesc"
+                            text="{poLookup>ShortText}"
+                        />
+                        <Text
+                            id="poLkCellPlant"
+                            text="{poLookup>Plant}"
+                        />
+                        <ObjectNumber
+                            id="poLkNumOrderQty"
+                            number="{poLookup>OrderQuantity}"
+                            unit="{poLookup>OrderUnit}"
+                        />
+                        <ObjectNumber
+                            id="poLkNumGrQty"
+                            number="{poLookup>GoodsReceiptQuantity}"
+                            unit="{poLookup>OrderUnit}"
+                        />
+                        <ObjectNumber
+                            id="poLkNumOpenQty"
+                            number="{poLookup>OpenQuantity}"
+                            unit="{poLookup>OrderUnit}"
+                            state="{= ${poLookup>OpenQuantity} > 0 ? 'Success' : 'Error' }"
+                        />
+                        <Button
+                            id="poLkBtnCreate"
+                            text="Tạo GR"
+                            type="Transparent"
+                            icon="sap-icon://add-document"
+                            enabled="{= ${poLookup>OpenQuantity} > 0 }"
+                            press="onOpenCreateFromPO"
+                        />
+                    </cells>
+                </ColumnListItem>
+            </items>
+        </Table>
+    </content>
+</Panel>
                         <Panel
                             id="grResultPanel"
                             visible="{= (${grModel>/summary/total} > 0) || !!${grResult>/statusText} }"
@@ -291,6 +300,12 @@
                                             state="Error"
                                             visible="{= ${grResult>/error_count} !== undefined }"
                                         />
+                                         <Link
+                                            id="grResShowErrLink"
+                                            text="Xem {grResult>/sapErrorCount} lỗi chi tiết"
+                                            press="onShowSapErrors"
+                                            visible="{= ${grResult>/hasSapErrors} === true }"
+                                            class="sapUiSmallMarginBegin" />
                                     </HBox>
                                 </HBox>
                             </content>

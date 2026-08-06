@@ -93,12 +93,28 @@ sap.ui.define(
                     const oBinding = oModel.bindList(
                         "/GrUpload", null, [],
                         this._buildFilters(),
-                        { $orderby: "CreatedAt desc" }
+                        { $orderby: "CreatedAt desc", $count: true }
                     );
-                    const aContexts = await oBinding.requestContexts(0, MAX_ROWS);
+
+                    await oBinding.requestContexts(0, 1);
+                    const iTotal =
+                        Number(
+                            await oBinding.getHeaderContext().requestProperty("$count")
+                        ) || 0;
+                    const iLoad = Math.min(iTotal, MAX_ROWS);
+                    const aContexts = iLoad
+                        ? await oBinding.requestContexts(0, iLoad)
+                        : [];
                     const aRows = aContexts.map((c) => c.getObject());
-                    this._applyData(aRows);
-                    MessageToast.show("Đã tải " + aRows.length + " GR");
+
+                    this._applyData(aRows, iTotal);
+                    if (iTotal > MAX_ROWS) {
+                        MessageToast.show(
+                            `Hiển thị ${aRows.length}/${iTotal} GR đầu tiên`
+                        );
+                    } else {
+                        MessageToast.show("Đã tải " + aRows.length + " GR");
+                    }
                 } catch (e) {
                     MessageBox.error("Lỗi tải dữ liệu: " + (e.message || e));
                 } finally {
@@ -106,7 +122,7 @@ sap.ui.define(
                 }
             },
 
-            _applyData(aRows) {
+            _applyData(aRows, iTotal = aRows.length) {
                 const oRpt = this.getView().getModel("rpt");
                 let iSuccess = 0, iError = 0, iPending = 0;
                 aRows.forEach((r) => {
@@ -117,10 +133,12 @@ sap.ui.define(
                 this._aRows = aRows;
                 oRpt.setProperty("/rows", aRows);
                 oRpt.setProperty("/kpi", {
-                    total: aRows.length,
+                    total: iTotal,
                     success: iSuccess,
                     error: iError,
                     pending: iPending,
+                    successRate: iTotal ? Math.round((iSuccess * 1000) / iTotal) / 10 : 0,
+                    errorRate: iTotal ? Math.round((iError * 1000) / iTotal) / 10 : 0,
                 });
                 this._renderChart();
             },
@@ -129,29 +147,31 @@ sap.ui.define(
 
             _renderChart() {
                 const oHtml = this.byId("grChartHtml");
+                const oDonut = this.byId("grDonutHtml");
                 if (!oHtml) return;
                 const aRows = this._aRows || [];
-                const sDim = this.byId("grChartDim").getSelectedKey();
-                const STATUS_LABEL = { S: "Success", E: "Error", R: "Ready", P: "Pending" };
-                const fnKey = {
-                    status: (r) => STATUS_LABEL[r.Status] || r.Status || "?",
-                    month:  (r) => r.CreatedAt ? String(r.CreatedAt).substring(0, 7) : "(trống)",
-                    user:   (r) => r.CreatedBy || "(trống)",
-                }[sDim];
-
                 const m = {};
-                aRows.forEach((r) => { const k = fnKey(r); m[k] = (m[k] || 0) + 1; });
-                let aData = Object.keys(m).map((k) => ({
-                    label: sDim === "month" && k.length === 7
-                        ? k.substring(5, 7) + "/" + k.substring(0, 4) : k,
-                    value: m[k], _k: k,
+                let iSuccess = 0, iError = 0, iPending = 0;
+                aRows.forEach((r) => {
+                    const sMonth = r.CreatedAt ? String(r.CreatedAt).substring(0, 7) : "(trống)";
+                    if (!m[sMonth]) { m[sMonth] = { success: 0, error: 0, pending: 0 }; }
+                    if (r.Status === "S") { m[sMonth].success++; iSuccess++; }
+                    else if (r.Status === "E") { m[sMonth].error++; iError++; }
+                    else { m[sMonth].pending++; iPending++; }
+                });
+                const aData = Object.keys(m).sort().map((k) => ({
+                    label: k.length === 7 ? k.substring(5, 7) + "/" + k.substring(0, 4) : k,
+                    values: [m[k].success, m[k].pending, m[k].error],
+                    _k: k,
                 }));
-                if (sDim === "month") {
-                    aData.sort((a, b) => (a._k > b._k ? 1 : -1));
-                } else {
-                    aData.sort((a, b) => b.value - a.value);
+                oHtml.setContent(SimpleChart.stackedColumns(aData));
+                if (oDonut) {
+                    oDonut.setContent(SimpleChart.donut([
+                        { label: "Thành công", value: iSuccess },
+                        { label: "Đang xử lý", value: iPending },
+                        { label: "Lỗi", value: iError },
+                    ]));
                 }
-                oHtml.setContent(SimpleChart.columns(aData));
             },
 
             onExport() {

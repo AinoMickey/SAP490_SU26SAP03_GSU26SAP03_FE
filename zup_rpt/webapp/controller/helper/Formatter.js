@@ -54,14 +54,32 @@ sap.ui.define([], function () {
                 default: return "None";
             }
         },
-                uploadStatusToState: function (s) {
+
+        uploadStatusToState: function (s) {
             switch (s) {
                 case "S": return "Success";
                 case "E": return "Error";
+                case "R": return "Warning";
                 case "P": return "Warning";
-                case "R": return "None";
                 default: return "None";
             }
+        },
+
+        grStatusText: function (s) {
+            switch (s) {
+                case "S": return "✓ Thành công";
+                case "E": return "✕ Lỗi";
+                case "R": return "⟳ Đang xử lý";
+                case "P": return "⟳ Đang xử lý";
+                default: return s || "";
+            }
+        },
+
+        processingTime: function (v) {
+            if (v === null || v === undefined || v === "") return "";
+            const n = Number(v);
+            if (isNaN(n)) return String(v);
+            return n.toFixed(1) + "s";
         },
     };
 });

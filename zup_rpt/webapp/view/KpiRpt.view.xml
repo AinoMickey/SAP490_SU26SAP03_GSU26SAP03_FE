@@ -81,11 +81,20 @@
                                 valueColor="Neutral" withMargin="false" icon="sap-icon://pending" />
                         </TileContent></tileContent>
                     </GenericTile>
-                    <GenericTile id="_kpk5" header="TG xử lý TB (giây)" subheader="Chỉ tính GR" frameType="OneByOne">
+                    <GenericTile id="_kpk5" header="Tỷ lệ thành công" frameType="OneByOne">
                         <tileContent><TileContent id="_kpkt5">
-                            <NumericContent id="_kpkn5" value="{rpt>/kpi/avgSeconds}"
+                            <NumericContent id="_kpkn5" value="{rpt>/kpi/successRate}"
+                                scale="%"
                                 truncateValueTo="8"
-                                valueColor="Neutral" withMargin="false" icon="sap-icon://history" />
+                                valueColor="Good" withMargin="false" icon="sap-icon://accept" />
+                        </TileContent></tileContent>
+                    </GenericTile>
+                    <GenericTile id="_kpk6" header="Tỷ lệ lỗi" frameType="OneByOne">
+                        <tileContent><TileContent id="_kpkt6">
+                            <NumericContent id="_kpkn6" value="{rpt>/kpi/errorRate}"
+                                scale="%"
+                                truncateValueTo="8"
+                                valueColor="Critical" withMargin="false" icon="sap-icon://error" />
                         </TileContent></tileContent>
                     </GenericTile>
                 </f:items>
