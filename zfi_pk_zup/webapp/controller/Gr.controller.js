@@ -42,9 +42,10 @@ sap.ui.define(
                     showCreatedAtColumn: true,
                 }), UPLOAD_MODEL);
                 this.getView().setModel(new JSONModel({}), "grResult");
+                this.getView().setModel(new JSONModel({ items: [], selectedCount: 0 }), "poLookup");
                 this.onApplyHistoryFilter();
                 this._startPolling();
-                this._loadAuth();
+                // this._loadAuth();
             },
 
 
@@ -60,6 +61,131 @@ sap.ui.define(
             onNavBack() {
                 this.getOwnerComponent().getRouter().navTo("RouteMain");
             },
+
+            onSearchOpenPO: async function () {
+                const sPo = this.byId("poLookupPoNumber").getValue().trim();
+                const sPlant = this.byId("poLookupPlant").getValue().trim();
+                const sMaterial = this.byId("poLookupMaterial").getValue().trim();
+                const sVendor = this.byId("poLookupVendor").getValue().trim();
+                const sPurchGroup = this.byId("poLookupPurchGroup").getValue().trim();
+                const sPurchOrg = this.byId("poLookupPurchOrg").getValue().trim();
+                const oDateFrom = this.byId("poLookupDateFrom").getDateValue();
+                const oDateTo = this.byId("poLookupDateTo").getDateValue();
+                const bHideRecv = this.byId("poLookupHideReceived").getSelected();
+
+                const pad = (n) => String(n).padStart(2, "0");
+                const fmt = (d) => d ? `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` : "";
+
+                this._showBusy();
+                try {
+                    const aRows = await ApiService.searchOpenPO(this._getGrModel(), {
+                        poNumber: sPo,
+                        plant: sPlant,
+                        material: sMaterial,
+                        vendor: sVendor,
+                        purchasingGroup: sPurchGroup,
+                        purchasingOrg: sPurchOrg,
+                        dateFrom: fmt(oDateFrom),
+                        dateTo: fmt(oDateTo),
+                        hideReceived: bHideRecv,
+                    });
+                    this.getView().getModel("poLookup").setProperty("/items", aRows);
+                    this.getView().getModel("poLookup").setProperty("/selectedCount", 0);
+                    this.byId("poLookupTable").removeSelections();
+                } catch (e) {
+                    MessageBox.error(e.message || "Không tra được PO");
+                } finally {
+                    this._closeBusy();
+                }
+            },
+
+
+            onPoLookupSelectionChange: function () {
+                const iCount = this.byId("poLookupTable").getSelectedItems().length;
+                this.getView().getModel("poLookup").setProperty("/selectedCount", iCount);
+            },
+
+            onDownloadPrefilledTemplate: function () {
+                const aSelected = this.byId("poLookupTable").getSelectedItems()
+                    .map((oItem) => oItem.getBindingContext("poLookup").getObject());
+                if (!aSelected.length) return;
+
+                sap.ui.require(["zfipkzup/controller/helper/GrExcelTemplate"], function (GrExcelTemplate) {
+                    GrExcelTemplate.downloadPrefilled(aSelected);
+                });
+            },
+
+            onOpenCreateFromPO: async function (oEvent) {
+                const oRow = oEvent.getSource().getBindingContext("poLookup").getObject();
+
+                if (!this._oCreatePODialog) {
+                    this._oCreatePODialog = await this.loadFragment({ name: "zfipkzup.view.fragment.CreateFromPO" });
+                }
+
+                this.getView().setModel(new JSONModel({
+                    poNumber: oRow.PurchaseOrder,
+                    poItem: oRow.PurchaseOrderItem,
+                    material: oRow.Material,
+                    shortText: oRow.ShortText,
+                    orderUnit: oRow.OrderUnit,
+                    openQuantity: oRow.OpenQuantity,
+                    grNumber: "",
+                    receiveQty: null,
+                    storageLocation: oRow.StorageLocation,
+                    batch: "",
+                }), "createPO");
+
+                this.byId("cfpDocDate").setDateValue(new Date());
+                this._oCreatePODialog.open();
+            },
+
+            onCancelCreateFromPO: function () {
+                this._oCreatePODialog?.close();
+            },
+
+            onConfirmCreateFromPO: async function () {
+                const oModel = this.getView().getModel("createPO");
+                const d = oModel.getData();
+                const oDate = this.byId("cfpDocDate").getDateValue();
+
+                if (!d.grNumber || !d.receiveQty || !d.storageLocation || !oDate) {
+                    MessageToast.show("Nhập đủ GR Number / Document Date / Receive Qty / Storage Location");
+                    return;
+                }
+
+                const pad = (n) => String(n).padStart(2, "0");
+                const sDocDate = oDate.getFullYear() + "-" + pad(oDate.getMonth() + 1) + "-" + pad(oDate.getDate());
+
+                this._showBusy();
+                try {
+                    const oResult = await ApiService.callActionCreateFromPO(this._getGrModel(), {
+                        po_number: d.poNumber,
+                        po_item: d.poItem,
+                        gr_number: d.grNumber,
+                        document_date: sDocDate,
+                        receive_qty: String(d.receiveQty),
+                        unit: d.orderUnit,
+                        storage_location: d.storageLocation,
+                        batch: d.batch,
+                    });
+                    console.log("GR upload result:", JSON.stringify(oResult));
+
+                    if (oResult.status === "E") {
+                        MessageBox.error(oResult.message || "Không tạo được GR nháp");
+                        return;
+                    }
+
+                    MessageToast.show("Đã tạo GR " + d.grNumber + " (nháp) — sang tab Chờ xử lý để Post");
+                    this._oCreatePODialog.close();
+                    this.onApplyHistoryFilter();
+                    this.byId("idIconTabBarGr").setSelectedKey("pending");
+                } catch (e) {
+                    MessageBox.error(e.message || "Lỗi không xác định");
+                } finally {
+                    this._closeBusy();
+                }
+            },
+
 
             onDownloadTemplate() {
                 GrExcelTemplate.download();
@@ -127,17 +253,21 @@ sap.ui.define(
             // ── Upload / Parse ──
 
             onFileChange: async function (oEvent) {
-                const oFile = oEvent.getParameter("files")?.[0];
-                const oModel = this.getView().getModel(UPLOAD_MODEL);
+    const oFile = oEvent.getParameter("files")?.[0];
+    const oModel = this.getView().getModel(UPLOAD_MODEL);
 
-                if (!oFile) { this._refreshTable(); return; }
+    if (!oFile) { this._refreshTable(); return; }
 
-                this._sFileName = oFile.name || "";
-                this.dataUpload = [];
-                oModel.setProperty("/items", []);
-                this._showBusy();
+    this._sFileName = oFile.name || "";
+    this.dataUpload = [];
+    oModel.setProperty("/items", []);
+    this.getView().getModel("grResult").setData({});
+    this.byId("grResultPanel").setVisible(false);
+    this._showBusy();
 
                 try {
+                    await ApiService.checkFileExistsGR(this._getGrModel(), this._sFileName);
+
                     const fileContent = await ExcelParser.readFile(oFile);
                     const workbook = XLSX.read(fileContent, { type: "binary" });
                     const oSheet = workbook.Sheets["Data"] || workbook.Sheets[workbook.SheetNames[0]];
@@ -174,6 +304,32 @@ sap.ui.define(
                     if (aPrepared.length === 0) {
                         const oBundle = this.getView().getModel("i18n").getResourceBundle();
                         MessageToast.show(oBundle.getText("UPLOAD_NO_DATA"));
+                        this._refreshTable();
+                        return;
+                    }
+
+                    // Chặn trùng GR Number ngay lúc chọn file: file mới nhưng GR Number
+                    // đã tồn tại (kể cả bản lỗi E ở Lịch sử) thì không cho Check/Post.
+                    const aGrNumbers = aPrepared
+                        .map((o) => String(o.r.gr_number || "").trim().toUpperCase())
+                        .filter(Boolean);
+                    const aExistingGr = await ApiService.checkGrNumbersExist(this._getGrModel(), aGrNumbers);
+                    if (aExistingGr.length > 0) {
+                        const mStatusText = {
+                            S: "đã post thành công", P: "đang chờ job xử lý",
+                            R: "đang là nháp ở tab Chờ xử lý", E: "đang LỖI ở tab Lịch sử"
+                        };
+                        ErrorDialog.handleErrorDialog(
+                            aExistingGr.map((o) => ({
+                                type: "Error",
+                                title: `GR ${o.grNumber} đã tồn tại`,
+                                description: `GR Number này ${mStatusText[o.status] || "đã tồn tại"} — ` +
+                                    `đổi GR Number khác trong file, hoặc xử lý bản cũ ở tab Chờ xử lý / Lịch sử.`,
+                            })),
+                            this
+                        );
+                        this.byId(POST_BTN_ID).setEnabled(false);
+                        this.byId(CHECK_BTN_ID).setEnabled(false);
                         this._refreshTable();
                         return;
                     }
@@ -381,37 +537,118 @@ sap.ui.define(
                         this._getGrModel(), this.getCurrentFileName(), bTestMode, aDocs
                     );
 
+                    // OData action trả PascalCase (Status/Message/TotalCount) — chuẩn hóa
+                    // về 1 biến, tránh đọc oResult.status (lowercase) ra undefined → toast xanh nhầm
+                    const sStatus = oResult.status ?? oResult.Status ?? "";
+                    const sMessage = oResult.message ?? oResult.Message ?? "";
+                    const iTotal = oResult.total_count ?? oResult.TotalCount ?? 0;
+
                     const oResultModel = this.getView().getModel("grResult");
-                    if (bTestMode) {
-                        oResultModel.setData({
-                            ...oResult,
-                            statusText: oResult.status === "S" ? "Hợp lệ" :
-                                oResult.status === "E" ? "Lỗi" : "Đang xử lý",
-                            statusState: oResult.status === "S" ? "Success" :
-                                oResult.status === "E" ? "Error" : "Warning",
-                        });
-                    } else {
-                        oResultModel.setData({
-                            ...oResult,
-                            statusText: oResult.status === "E" ? "Lỗi" : "Đang xử lý",
-                            statusState: oResult.status === "E" ? "Error" : "Warning",
-                        });
-                    }
+                   if (bTestMode) {
+    oResultModel.setData({
+        ...oResult,
+        statusText: sStatus === "S" ? "Hợp lệ" :
+            sStatus === "E" ? "Lỗi" : "Đang xử lý",
+        statusState: sStatus === "S" ? "Success" :
+            sStatus === "E" ? "Error" : "Warning",
+    });
+
+    // Panel xanh ở trên chỉ là check cú pháp Excel — nếu SAP đã từ chối thật
+    // (period, PO, qty...) thì đây mới là verdict cuối, phải đồng bộ lại,
+    // không để xanh "100% hợp lệ" đứng cạnh đỏ "Lỗi" của cùng 1 lần Check.
+    if (sStatus === "E") {
+        const oGrModel = this.getView().getModel(UPLOAD_MODEL);
+        oGrModel.setProperty("/summaryText", "SAP từ chối: " + sMessage);
+        oGrModel.setProperty("/summaryState", "Error");
+    }
+}
+
                     this.byId("grResultPanel").setVisible(true);
 
+                   // Tách lỗi theo từng dòng để hiện dialog chi tiết
+                    let aErrItems = [];
+                    try {
+                        const aAll = JSON.parse(oResult.items_json ?? oResult.ItemsJson ?? "[]") || [];
+                        aErrItems = aAll.filter((it) => (it.status ?? it.Status) === "E");
+                    } catch (e) { /* rỗng → fallback message */ }
+
                     const oBundle = this.getView().getModel("i18n").getResourceBundle();
-                    if (bTestMode) {
+
+                    if (sStatus === "E") {
+                        if (aErrItems.length) {
+                            ErrorDialog.handleErrorDialog(
+                                aErrItems.map((it) => ({
+                                    type: "Error",
+                                    title: `GR ${it.grNumber ?? it.GrNumber} — Item ${it.item ?? it.Item}` +
+                                           ` (PO ${it.poNumber ?? it.PoNumber}/${it.poItem ?? it.PoItem})`,
+                                    description: it.message ?? it.Message,
+                                })),
+                                this
+                            );
+                        } else {
+                            MessageBox.error(sMessage || "Check thất bại.");
+                        }
+                    } else if (bTestMode) {
                         MessageToast.show(oBundle.getText("CHECK_COMPLETE"));
+                    } else {
+                        MessageToast.show(oBundle.getText("SENT_PROCESSING", [iTotal, "GR"]));
+                    }
+
+                    if (bTestMode) {
                         this.onRefreshPending();
                     } else {
-                        MessageToast.show(oBundle.getText("SENT_PROCESSING", [(oResult.total_count || 0), 'GR']));
                         this._refreshPendingAndHistory();
                     }
+
                 } catch (err) {
                     MessageBox.error(this._extractError(err, "Lỗi khi gọi SAP."));
                 } finally {
                     this._closeBusy();
                 }
+            },
+
+            /**
+ * Tra open PO qua entity đọc-thôi POItem (Check Open PO). Không có PO Number
+ * lẫn Plant thì không query — tránh kéo toàn bộ PO đang mở trong hệ thống.
+ */
+            searchOpenPO: async function (oModel, sPoNumber, sPlant) {
+                const aFilters = [];
+                if (sPoNumber) {
+                    aFilters.push(new Filter("PurchaseOrder", FilterOperator.EQ, sPoNumber));
+                }
+                if (sPlant) {
+                    aFilters.push(new Filter("Plant", FilterOperator.EQ, sPlant));
+                }
+                const oBinding = oModel.bindList("/POItem", undefined, [], aFilters, {
+                    $orderby: "PurchaseOrder,PurchaseOrderItem",
+                });
+                const aContexts = await oBinding.requestContexts(0, 200);
+                return aContexts.map((oContext) => oContext.getObject());
+            },
+
+            /**
+             * Tạo 1 dòng GR nháp (status R) trực tiếp từ 1 PO item đã chọn ở panel
+             * Check Open PO — dùng action createFromPO, KHÔNG đụng uploadExcel.
+             */
+            callActionCreateFromPO: async function (oModel, oParam) {
+                const ACTION_FQN_CREATE_PO =
+                    "com.sap.gateway.srvd.zmm_ui_pogr_o4.v0001.createFromPO";
+
+                const oOperation = oModel.bindContext(
+                    "/GrUpload/" + ACTION_FQN_CREATE_PO + "(...)"
+                );
+                oOperation.setParameter("po_number", oParam.po_number);
+                oOperation.setParameter("po_item", oParam.po_item);
+                oOperation.setParameter("gr_number", oParam.gr_number);
+                oOperation.setParameter("document_date", oParam.document_date);
+                oOperation.setParameter("receive_qty", oParam.receive_qty);
+                oOperation.setParameter("unit", oParam.unit);
+                oOperation.setParameter("storage_location", oParam.storage_location);
+                oOperation.setParameter("batch", oParam.batch || "");
+                oOperation.setParameter("user_email", await this.getUserEmail());
+                await oOperation.execute();
+
+                return oOperation.getBoundContext().getObject() || {};
             },
 
             getCurrentFileName() {
@@ -657,7 +894,7 @@ sap.ui.define(
 
                 return err.message || sFallback;
             },
-                  _loadAuth: async function () {
+            _loadAuth: async function () {
                 try {
                     const oAuth = await ApiService.loadMyAuth(
                         this.getOwnerComponent().getModel("gr")
@@ -665,8 +902,8 @@ sap.ui.define(
                     if (oAuth.can_upload_gr === false) {
                         this.byId(POST_BTN_ID)?.setVisible(false);
                         this.byId(CHECK_BTN_ID)?.setVisible(false);
-                         this.byId("fileUploader")?.setEnabled(false);   // ← THÊM: khóa nút chọn file
-            this._bNoAuth = true; 
+                        // this.byId("fileUploader")?.setEnabled(false);   // ← THÊM: khóa nút chọn file
+                        // this._bNoAuth = true;
                     }
                 } catch (e) {
                     // Không đọc được quyền thì để nguyên nút — backend vẫn chặn

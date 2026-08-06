@@ -44,6 +44,9 @@
                     <Column id="_gidc10" width="11rem">
                         <Text id="_gidt10" text="Material Doc / Năm" />
                     </Column>
+                     <Column id="_gidc11" width="13rem">
+                        <Text id="_gidt11" text="FI Doc" />
+                    </Column>
                     <Column id="_gidc8" width="8rem"><Text id="_gidt8" text="Status" /></Column>
                     <Column id="_gidc9" minScreenWidth="Tablet" demandPopin="true">
                         <Text id="_gidt9" text="Message" />
@@ -58,8 +61,10 @@
                             <Text id="_gidcell4" text="{gr>Material}" tooltip="{gr>Material}" />
                             <Text id="_gidcell5" text="{gr>Plant}" />
                             <ObjectNumber id="_gidcell6" number="{gr>ReceiveQty}" unit="{gr>Unit}" />
-                            <Text id="_gidcell10"
+                             <Text id="_gidcell10"
                                 text="{= ${gr>MaterialDocument} ? ${gr>MaterialDocument} + ' / ' + ${gr>MaterialDocumentYear} : '—' }" />
+                            <Text id="_gidcell11"
+                                text="{= ${gr>FiDocNumber} ? ${gr>FiDocCompany} + '/' + ${gr>FiDocNumber} + '/' + ${gr>FiDocYear} : '—' }" />
                             <ObjectStatus id="_gidcell8"
                                 text="{= ${gr>Status} === 'S' ? 'Thành công' : ${gr>Status} === 'E' ? 'Lỗi' : ${gr>Status} === 'P' ? 'Đang xử lý' : 'Nháp' }"
                                 state="{= ${gr>StatusCriticality} === 3 ? 'Success' : ${gr>StatusCriticality} === 1 ? 'Error' : 'None' }"

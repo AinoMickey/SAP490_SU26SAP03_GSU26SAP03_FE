@@ -90,6 +90,51 @@ sap.ui.define([], function () {
       XLSX.writeFile(wb, "TEMPLATE_MM_POGR_" + sStamp + ".xlsx");
 
     },
+
+        downloadPrefilled: function (aRows) {
+      const headerKeys = Object.keys(COLUMN_DATA);
+      const headerLabels = Object.values(COLUMN_DATA);
+      const aData = aRows.map((row) => ({
+        gr_number: "",
+        document_date: "",
+        movement_type: "101",
+        po_number: row.PurchaseOrder || "",
+        po_item: row.PurchaseOrderItem || "",
+        receive_qty: "",
+        unit: row.OrderUnit || "",
+        batch: "",
+        storage_location: row.StorageLocation || "",
+      }));
+      const aoa = [headerKeys, headerLabels, ...aData.map((r) => headerKeys.map((k) => r[k]))];
+      const sheet = XLSX.utils.aoa_to_sheet(aoa);
+
+      const range = XLSX.utils.decode_range(sheet["!ref"]);
+      for (let R = 0; R <= range.e.r; ++R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const addr = XLSX.utils.encode_cell({ r: R, c: C });
+          if (!sheet[addr]) sheet[addr] = { t: "s", v: "" };
+          sheet[addr].z = "@";
+          sheet[addr].t = "s";
+        }
+      }
+      const cols = [];
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        cols.push({ wch: 22 });
+        sheet[XLSX.utils.encode_cell({ c: C, r: 0 })].s = KEY_STYLE;
+        sheet[XLSX.utils.encode_cell({ c: C, r: 1 })].s = LABEL_STYLE;
+      }
+      sheet["!cols"] = cols;
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, sheet, "Data");
+      const oNow = new Date();
+      const sPad = (n) => String(n).padStart(2, "0");
+      const sStamp =
+        oNow.getFullYear() + sPad(oNow.getMonth() + 1) + sPad(oNow.getDate()) +
+        "_" + sPad(oNow.getHours()) + sPad(oNow.getMinutes()) + sPad(oNow.getSeconds());
+      XLSX.writeFile(wb, "GR_FROM_PO_" + sStamp + ".xlsx");
+    },
+
     getColumnData: function () {
       return Object.assign({}, COLUMN_DATA);
     },

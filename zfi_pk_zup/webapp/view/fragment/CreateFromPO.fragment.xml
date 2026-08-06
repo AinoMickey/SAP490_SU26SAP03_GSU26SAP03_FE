@@ -1,0 +1,41 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:l="sap.ui.layout">
+    <Dialog id="createFromPODialog"
+        title="Tạo GR từ PO {createPO>/poNumber}/{createPO>/poItem}"
+        contentWidth="28rem"
+        resizable="true"
+        draggable="true">
+        <content>
+            <l:VerticalLayout id="cfpLayout" class="sapUiSmallMargin" width="100%">
+                <Label id="cfpLblMat" text="Material" />
+                <Text id="cfpMat" text="{createPO>/material} — {createPO>/shortText}" class="sapUiTinyMarginBottom" />
+
+                <Label id="cfpLblOpen" text="Open Qty" />
+                <Text id="cfpOpen" text="{createPO>/openQuantity} {createPO>/orderUnit}" class="sapUiTinyMarginBottom" />
+
+                <Label id="cfpLblGr" text="GR Number *" required="true" />
+                <Input id="cfpGrNumber" value="{createPO>/grNumber}" class="sapUiTinyMarginBottom" />
+
+                <Label id="cfpLblDate" text="Document Date *" required="true" />
+                <DatePicker id="cfpDocDate" valueFormat="yyyy-MM-dd" displayFormat="dd/MM/yyyy" class="sapUiTinyMarginBottom" />
+
+                <Label id="cfpLblQty" text="Receive Qty *" required="true" />
+                <Input id="cfpReceiveQty" type="Number" value="{createPO>/receiveQty}" class="sapUiTinyMarginBottom" />
+
+                <Label id="cfpLblSloc" text="Storage Location *" required="true" />
+                <Input id="cfpSloc" value="{createPO>/storageLocation}" class="sapUiTinyMarginBottom" />
+
+                <Label id="cfpLblBatch" text="Batch" />
+                <Input id="cfpBatch" value="{createPO>/batch}" />
+            </l:VerticalLayout>
+        </content>
+        <beginButton>
+            <Button id="cfpBtnConfirm" text="Tạo GR (nháp)" type="Emphasized" press="onConfirmCreateFromPO" />
+        </beginButton>
+        <endButton>
+            <Button id="cfpBtnCancel" text="Hủy" press="onCancelCreateFromPO" />
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>

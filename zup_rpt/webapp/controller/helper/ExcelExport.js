@@ -1,7 +1,7 @@
 sap.ui.define(["./Formatter"], function (Formatter) {
     "use strict";
 
-    // Export Excel phong cách báo cáo NTSF: 2 sheet.
+
     // Sheet "Summary": tiêu đề báo cáo, thời điểm xuất, tiêu chí lọc, KPI.
     // Sheet "Data": bảng dữ liệu đang hiển thị, header có style.
     // Yêu cầu XLSX (xlsx.bundle) đã được load global bởi controller gọi.

@@ -1,24 +1,3 @@
-/* ═══════════════════════════════════════════════════════════════════════
-   LỖI: "Item is not a constructor" khi bấm Go
-
-   NGUYÊN NHÂN
-   Mảng sap.ui.define ánh xạ tham số THEO VỊ TRÍ. File gốc đã có sẵn
-   ./xlsx/xlsx.bundle ở vị trí 16 nhưng KHÔNG có tham số tương ứng
-   (16 dependency / 15 tham số). Nó vô hại vì không ai dùng.
-
-   Khi thêm "sap/ui/core/Item" vào cuối mảng và thêm tham số Item, tham số
-   Item rơi vào vị trí 16, tức trỏ vào module xlsx.bundle chứ không phải
-   sap/ui/core/Item. xlsx.bundle không export constructor nào, nên:
-
-       new Item({ key: "", text: "Tất cả" })   ->   Item is not a constructor
-
-   Lỗi ném ra trong _applyData nên onGo bắt được và hiện "Lỗi tải dữ liệu",
-   làm tưởng là lỗi đọc OData. Thực ra dữ liệu đã tải xong: tile hiện
-   57 chứng từ, 150,2 tr và biểu đồ đã vẽ.
-
-   CÁCH SỬA: thêm 1 tham số giữ chỗ cho xlsx.bundle, TRƯỚC Item.
-   ═══════════════════════════════════════════════════════════════════════ */
-
 sap.ui.define(
   [
     "sap/ui/core/mvc/Controller",

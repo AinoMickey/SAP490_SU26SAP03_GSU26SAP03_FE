@@ -641,7 +641,7 @@ sap.ui.define(
         this.byId("ppFileUploader")?.clear();
       },
 
-            //ThaoNTT add
+            //ThaoNTT add auth
                   _loadAuth: async function () {
                 try {
                     const oAuth = await ApiService.loadMyAuth(

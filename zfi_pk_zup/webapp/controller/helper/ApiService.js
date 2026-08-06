@@ -278,7 +278,58 @@ sap.ui.define(
             // ════════════════════════════════════════════════════════
             // GR — Upload Phiếu Nhập Kho (service zmm_ui_pogr_o4)
             // ════════════════════════════════════════════════════════
+            checkFileExistsGR: function (oModel, sFileName) {
+                return new Promise((resolve, reject) => {
+                    const oListBinding = oModel.bindList("/GrUpload", null, null, [
+                        new Filter("Filename", FilterOperator.EQ, sFileName),
+                    ]);
+                    oListBinding
+                        .requestContexts(0, 1)
+                        .then((aContexts) => {
+                            if (aContexts && aContexts.length > 0) {
+                                const sExistingGr = aContexts[0].getObject().GrNumber;
+                                reject(new Error(
+                                    `File "${sFileName}" đã được upload trước đó (GR ${sExistingGr}) — vui lòng chọn file khác hoặc đổi tên file.`
+                                ));
+                            } else {
+                                resolve();
+                            }
+                        })
+                        .catch(() =>
+                            reject(new Error("Lỗi kiểm tra lịch sử file. Vui lòng thử lại."))
+                        );
+                });
+            },
+            /**
+                         * Kiểm tra các GR Number trong file đã tồn tại trong hệ thống chưa.
+                         * Frontend chỉ chặn trùng TÊN FILE; GR Number trùng (kể cả bản lỗi E ở
+                         * Lịch sử) phải hỏi backend. Trả về danh sách GR đã tồn tại kèm status
+                         * để controller báo đỏ ngay lúc chọn file, không đợi bấm Check.
+                         * @param {sap.ui.model.odata.v4.ODataModel} oModel
+                         * @param {string[]} aGrNumbers danh sách GR Number (đã distinct)
+                         * @returns {Promise<Array<{grNumber:string,status:string}>>}
+                         */
+            checkGrNumbersExist: async function (oModel, aGrNumbers) {
+                const aUnique = [...new Set((aGrNumbers || [])
+                    .map((s) => String(s || "").trim().toUpperCase())
+                    .filter(Boolean))];
+                if (!aUnique.length) return [];
 
+                const aExisting = [];
+                for (const sGr of aUnique) {
+                    const oBinding = oModel.bindList("/GrUpload", null, null, [
+                        new Filter("GrNumber", FilterOperator.EQ, sGr),
+                    ]);
+                    const aContexts = await oBinding.requestContexts(0, 1);
+                    if (aContexts && aContexts.length > 0) {
+                        aExisting.push({
+                            grNumber: sGr,
+                            status: aContexts[0].getObject().Status || "",
+                        });
+                    }
+                }
+                return aExisting;
+            },
             buildGrDocs: function (aItems) {
                 const mGr = new Map();
                 aItems.forEach((row) => {
@@ -305,26 +356,32 @@ sap.ui.define(
 
 
             callActionUploadGR: async function (oModel, sFileName, bTestMode, aDocs) {
-                const ACTION_FQN_GR =
-                    "com.sap.gateway.srvd.zmm_ui_pogr_o4.v0001.uploadExcel";
-
+                const ACTION_FQN_GR = "com.sap.gateway.srvd.zmm_ui_pogr_o4.v0001.uploadExcel";
                 const sPayloadJson = JSON.stringify({
                     filename: sFileName,
                     useremail: await this.getUserEmail(),
                     doc: aDocs,
                 });
+                console.log(">>> callActionUploadGR payload:", sPayloadJson, "testmode:", bTestMode);
 
-                const oOperation = oModel.bindContext(
-                    "/GrUpload/" + ACTION_FQN_GR + "(...)"
-                );
+                const oOperation = oModel.bindContext("/GrUpload/" + ACTION_FQN_GR + "(...)");
                 oOperation.setParameter("payload_json", sPayloadJson);
                 oOperation.setParameter("mapping_id", "POGR001");
                 oOperation.setParameter("testmode", bTestMode);
-                await oOperation.execute();
+
+                try {
+                    await oOperation.execute();
+                } catch (e) {
+                    console.error(">>> execute() THREW:", e);
+                    throw e;
+                }
 
                 const oResult = oOperation.getBoundContext().getObject();
+                console.log(">>> callActionUploadGR result:", JSON.stringify(oResult));
                 return oResult || {};
             },
+
+
 
             /**
  * Đọc quyền upload của user hiện tại. Action đặt ở service GR nhưng trả quyền
@@ -339,6 +396,72 @@ sap.ui.define(
                 await oOperation.execute();
                 return oOperation.getBoundContext().getObject() || {};
             },
+
+            /**
+* Tra open PO qua entity đọc-thôi POItem (Check Open PO).
+* @param {sap.ui.model.odata.v4.ODataModel} oModel
+* @param {object} oFilters { poNumber, plant, material, vendor, purchasingGroup,
+*                            purchasingOrg, dateFrom, dateTo (yyyy-mm-dd), hideReceived }
+*/
+searchOpenPO: async function (oModel, oFilters) {
+    const f = oFilters || {};
+    const aFilters = [];
+
+    if (f.poNumber)        aFilters.push(new Filter("PurchaseOrder", FilterOperator.EQ, f.poNumber));
+    if (f.plant)           aFilters.push(new Filter("Plant", FilterOperator.EQ, f.plant));
+    if (f.material)        aFilters.push(new Filter("Material", FilterOperator.EQ, f.material));
+    if (f.vendor)          aFilters.push(new Filter("Supplier", FilterOperator.EQ, f.vendor));
+    if (f.purchasingGroup) aFilters.push(new Filter("PurchasingGroup", FilterOperator.EQ, f.purchasingGroup));
+    if (f.purchasingOrg)   aFilters.push(new Filter("PurchasingOrganization", FilterOperator.EQ, f.purchasingOrg));
+
+    if (f.dateFrom && f.dateTo) {
+        aFilters.push(new Filter("PurchaseOrderDate", FilterOperator.BT, f.dateFrom, f.dateTo));
+    } else if (f.dateFrom) {
+        aFilters.push(new Filter("PurchaseOrderDate", FilterOperator.GE, f.dateFrom));
+    } else if (f.dateTo) {
+        aFilters.push(new Filter("PurchaseOrderDate", FilterOperator.LE, f.dateTo));
+    }
+
+    // OpenQuantity có @Semantics.quantity.unitOfMeasure — OData chặn filter số trực tiếp
+    // trên field kiểu quantity gắn unit, nên "ẩn PO đã nhận đủ" phải lọc ở client.
+    const oBinding = oModel.bindList("/POItem", undefined, [], aFilters, {
+        $orderby: "PurchaseOrder,PurchaseOrderItem",
+    });
+    const aContexts = await oBinding.requestContexts(0, 200);
+    let aRows = aContexts.map((oContext) => oContext.getObject());
+    if (f.hideReceived) {
+        aRows = aRows.filter((oRow) => Number(oRow.OpenQuantity) > 0);
+    }
+    return aRows;
+},
+
+
+
+            /**
+             * Tạo 1 dòng GR nháp (status R) trực tiếp từ 1 PO item đã chọn ở panel
+             * Check Open PO — dùng action createFromPO, KHÔNG đụng uploadExcel.
+             */
+            callActionCreateFromPO: async function (oModel, oParam) {
+                const ACTION_FQN_CREATE_PO =
+                    "com.sap.gateway.srvd.zmm_ui_pogr_o4.v0001.createFromPO";
+
+                const oOperation = oModel.bindContext(
+                    "/GrUpload/" + ACTION_FQN_CREATE_PO + "(...)"
+                );
+                oOperation.setParameter("po_number", oParam.po_number);
+                oOperation.setParameter("po_item", oParam.po_item);
+                oOperation.setParameter("gr_number", oParam.gr_number);
+                oOperation.setParameter("document_date", oParam.document_date);
+                oOperation.setParameter("receive_qty", oParam.receive_qty);
+                oOperation.setParameter("unit", oParam.unit);
+                oOperation.setParameter("storage_location", oParam.storage_location);
+                oOperation.setParameter("batch", oParam.batch || "");
+                oOperation.setParameter("user_email", await this.getUserEmail());
+                await oOperation.execute();
+
+                return oOperation.getBoundContext().getObject() || {};
+            },
+
 
             _sUserEmail: null,
 
