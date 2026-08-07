@@ -9,23 +9,6 @@ sap.ui.define(
   function (Filter, FilterOperator, ExcelTemplate, PpExcelTemplate, GrExcelTemplate) {
     "use strict";
 
-    /**
-     * HistoryFileExport - Dựng lại file Excel (đúng format template) từ dữ liệu
-     * đã post thành công nằm trong bảng log.
-     *
-     * KHÔNG phải file gốc byte-for-byte: hệ thống không lưu file upload,
-     * chỉ lưu dữ liệu đã parse. File dựng lại có:
-     *   - 2 dòng header y hệt template (dòng 1 = key, dòng 2 = label)
-     *   - dữ liệu đã post, ngày format DD/MM/YYYY, mọi ô định dạng Text
-     *   - sheet "Data" (parser đọc sheet này) + sheet "Info" (metadata audit)
-     *
-     * Cột không lưu trong log sẽ để TRỐNG (xem MISSING_FI / MISSING_PP).
-     */
-
-    // ═════════════ Map cột template -> property OData ═════════════
-    // k = key template (dòng 1 header), p = property CDS (null = log không có)
-    // t = 'date' | 'num'; z = true nghĩa là giữ giá trị 0 (cột bắt buộc)
-
     const FI_COLS = [
       { k: "id_doc", p: "id_doc" },
       { k: "documentdate", p: "Documentdate", t: "date" },
@@ -41,8 +24,8 @@ sap.ui.define(
       { k: "negativeposting", p: "negativeposting" },
       { k: "postingkey", p: "postingkey" },
       { k: "account", p: "account" },
-      { k: "mainassetnumber", p: "mainassetnumber" },
-      { k: "subassetnumber", p: "subassetnumber" },
+      { k: "mainassetnumber", p: "mainassetnumber", z0: true },
+      { k: "subassetnumber", p: "subassetnumber", z0: true },
       { k: "specialglaccount", p: "specialglaccount" },
       { k: "assettransactiontype", p: "assettransactiontype" },
       { k: "amountindoumentcurrency", p: "amountindoumentcurrency", t: "num", z: true },
@@ -50,15 +33,15 @@ sap.ui.define(
       { k: "taxbaseamount", p: "taxbaseamount", t: "num" },
       { k: "localtaxbaseamount", p: "localtaxbaseamount", t: "num" },
       { k: "assignment", p: "assignment" },
-      { k: "costcenter", p: "costcenter" },
-      { k: "profitcenter", p: "profitcenter" },
-      { k: "internalorder", p: "internalorder" },
-      { k: "wbselement", p: "wbselement" },
+      { k: "costcenter", p: "costcenter", z0: true },
+      { k: "profitcenter", p: "profitcenter", z0: true },
+      { k: "internalorder", p: "internalorder", z0: true },
+      { k: "wbselement", p: "wbselement", z0: true },
       { k: "businessarea", p: "businessarea" },
       { k: "assetvaluedate", p: "assetvaluedate", t: "date" },
       { k: "itemtext", p: "itemtext" },
       { k: "longtext", p: "longtext" },
-      { k: "overrideglaccount", p: "overrideglaccount" },
+      { k: "overrideglaccount", p: "overrideglaccount", z0: true },
       { k: "taxcode", p: "taxcode" },
       { k: "segment", p: "segment" },
       { k: "paymentterms", p: "paymentterms" },
@@ -71,14 +54,14 @@ sap.ui.define(
       { k: "contracttype", p: "contracttype" },
       { k: "housebank", p: "housebank" },
       { k: "bankaccountid", p: "bankaccountid" },
-      { k: "invoicerefnum", p: "invoicerefnum" },
-      { k: "invoicereffiscalyear", p: "invoicefiscalyear" },
-      { k: "invoicereflineitem", p: "invoicereflineitem" },
-      { k: "purchasingno", p: "purchasingno" },
-      { k: "purchasingitem", p: "purchasingitem" },
-      { k: "saleorder", p: "saleorder" },
-      { k: "saleorderitem", p: "saleorderitem" },
-      { k: "customer", p: "customer" },
+      { k: "invoicerefnum", p: "invoicerefnum", z0: true },
+      { k: "invoicereffiscalyear", p: "invoicefiscalyear", z0: true },
+      { k: "invoicereflineitem", p: "invoicereflineitem", z0: true },
+      { k: "purchasingno", p: "purchasingno", z0: true },
+      { k: "purchasingitem", p: "purchasingitem", z0: true },
+      { k: "saleorder", p: "saleorder", z0: true },
+      { k: "saleorderitem", p: "saleorderitem", z0: true },
+      { k: "customer", p: "customer", z0: true },
       { k: "cusgroup", p: "cusgroup" },
       { k: "division", p: "division" },
       { k: "distributionchannel", p: "distributionchannel" },
@@ -87,11 +70,11 @@ sap.ui.define(
       { k: "salesemployee", p: "salesemployee" },
       { k: "salesgroup", p: "salesgroup" },
       { k: "materialgroup", p: "materialgroup" },
-      { k: "product", p: "product" },
+      { k: "product", p: "product", z0: true },
       { k: "unit", p: "unit" },
       { k: "baseunit", p: "baseunit" },
       { k: "quantity", p: "quantity", t: "num" },
-      { k: "alternativepayee", p: "alternativepayee" },
+      { k: "alternativepayee", p: "alternativepayee", z0: true },
       { k: "name1", p: "name1" },
       { k: "name2", p: "name2" },
       { k: "name3", p: "name3" },
@@ -114,11 +97,13 @@ sap.ui.define(
       { k: "plant", p: "plant" },
       { k: "productgroupmot", p: null },
       { k: "producttype", p: null },
-      { k: "orderid", p: "orderid" },
-      { k: "material", p: "material" },
+      { k: "orderid", p: "orderid", z0: true },
+      { k: "material", p: "material", z0: true },
     ];
 
-    // Cột tham chiếu thêm vào cuối file (không thuộc template, upload lại bỏ qua)
+    // Cột tham chiếu thêm vào cuối file FI.
+    // Cột này KHÔNG thuộc template nên UploadValidator bỏ qua khi upload lại,
+    // vì vậy giữ lại được mà không cản trở việc post lại.
     const FI_REF_COLS = [
       {
         k: "accountingdocument",
@@ -131,33 +116,31 @@ sap.ui.define(
       { k: "id_doc", p: "IdDoc" },
       { k: "ordertype", p: "ProductionOrderType" },
       { k: "productionplant", p: "ProductionPlant" },
-      { k: "material", p: "Material" },
+      { k: "material", p: "Material", z0: true },
       { k: "productionversion", p: "ProductionVersion" },
       { k: "totalqty", p: "TotalQty", t: "num", z: true },
       { k: "baseunit", p: "BaseUnit" },
       { k: "datestart", p: "StartDate", t: "date" },
       { k: "dateend", p: "EndDate", t: "date" },
-      { k: "saleorder", p: "SalesOrder" },
-      { k: "saleorderitem", p: "SalesOrderItem" },
+      // Lệnh MTS: log lưu 0, không lưu rỗng -> z0 để file dựng lại để TRỐNG.
+      // Không có z0 thì validator chặn "có SO Item nhưng thiếu SO".
+      { k: "saleorder", p: "SalesOrder", z0: true },
+      { k: "saleorderitem", p: "SalesOrderItem", z0: true },
+      // ZPP_TB_ZUPLSX không có cột longtext -> không dựng lại được
       { k: "longtext", p: null },
     ];
 
-    // CẢNH BÁO: cột productionorder có giá trị -> upload lại sẽ BỎ QUA dòng đó
-    // (backend coi như lệnh đã tạo). Xóa cột này nếu muốn post lại thành lệnh mới.
-    const PP_REF_COLS = [
-      {
-        k: "productionorder",
-        p: "ProductionOrder",
-        label: "Production Order\n(Lệnh đã tạo - XÓA cột này nếu muốn post lại)",
-      },
-    ];
+    // PP KHÔNG có cột tham chiếu.
+    // Số lệnh đã tạo được ghi ở sheet Info thay vì cột Data, để file dựng lại
+    // là template sạch và upload lại được ngay.
+    const PP_REF_COLS = [];
 
-        const GR_COLS = [
+    const GR_COLS = [
       { k: "gr_number", p: "GrNumber" },
       { k: "document_date", p: "DocumentDate", t: "date" },
       { k: "movement_type", p: "MovementType" },
-      { k: "po_number", p: "PoNumber" },
-      { k: "po_item", p: "PoItem" },
+      { k: "po_number", p: "PoNumber", z0: true },
+      { k: "po_item", p: "PoItem", z0: true },
       { k: "receive_qty", p: "ReceiveQty", t: "num", z: true },
       { k: "unit", p: "Unit" },
       { k: "storage_location", p: "StorageLocation" },
@@ -209,6 +192,16 @@ sap.ui.define(
       return v === undefined || v === null ? "" : String(v);
     }
 
+    /**
+     * Cột ALPHA/NUMC không bắt buộc: log lưu 0 hoặc 0000000000 thay vì rỗng.
+     * Ghi số 0 ra file làm validator hiểu là "có giá trị" và chặn file.
+     * Trả về chuỗi rỗng khi mọi ký tự đều là số 0.
+     */
+    function _stripZeros(s) {
+      const t = _s(s).trim();
+      return /^0+$/.test(t) ? "" : t;
+    }
+
     /** Edm.Date 'YYYY-MM-DD' hoặc NUMC 'YYYYMMDD' -> 'DD/MM/YYYY'; rỗng/0 -> '' */
     function _fmtDate(v) {
       const s = _s(v).trim();
@@ -244,7 +237,7 @@ sap.ui.define(
       if (oCol.t === "date") return _fmtDate(v);
       if (oCol.t === "num") return _fmtNum(v, oCol.z);
       const s = _s(v).trim();
-      return s;
+      return oCol.z0 ? _stripZeros(s) : s;
     }
 
     function _stamp() {
@@ -358,12 +351,11 @@ sap.ui.define(
     }
 
     return {
-            getMissingColumns: function (sType) {
+      getMissingColumns: function (sType) {
         if (sType === "PP") return MISSING_PP.slice();
         if (sType === "GR") return MISSING_GR.slice();
         return MISSING_FI.slice();
       },
-
 
       /**
        * Dựng lại file FI đã post.
@@ -395,6 +387,7 @@ sap.ui.define(
           throw new Error("Không tìm thấy dòng chi tiết nào của file " + sFilename);
         }
 
+        const sOut = _outName(sFilename);
         const oWb = _buildWorkbook(
           aCols,
           _labels(ExcelTemplate, FI_REF_COLS),
@@ -406,21 +399,26 @@ sap.ui.define(
             "So dong": aRows.length,
             "Ngay dung lai": new Date().toISOString(),
             "Nguon du lieu": "Log ZFI_TB_UPLOAD / ZFI_TB_UPLOAD_I (du lieu da post)",
-            "Cot khong co trong log": MISSING_FI.join(", "),
-            "Luu y":
-              "Day la file DUNG LAI tu log, khong phai file goc. Xoa sheet Info va cot tham chieu truoc khi upload lai.",
+            "Cot khong co trong log":
+              MISSING_FI.join(", ") +
+              " (khong khai trong ts_doc_item_request nen bi bo khi deserialise)",
+            "Upload lai": "Doi ten file roi upload. Cot accountingdocument khong thuoc " +
+              "template nen validator bo qua, khong can xoa.",
+            "Luu y": "Day la file DUNG LAI tu log, khong phai file goc.",
           },
         );
 
-        XLSX.writeFile(oWb, _outName(sFilename));
-        return { rows: aRows.length, file: _outName(sFilename), missing: MISSING_FI };
+        XLSX.writeFile(oWb, sOut);
+        return { rows: aRows.length, file: sOut, missing: MISSING_FI };
       },
 
       /**
        * Dựng lại file PP đã post.
+       * File dựng lại là TEMPLATE SẠCH: không còn cột productionorder, các cột
+       * sales order để trống khi lệnh là MTS. Đổi tên file là upload lại được.
        * @param {sap.ui.model.odata.v4.ODataModel} oModel model "pp" (service zpp_ui_zuplsx_o4)
        * @param {string} sFilename tên file trong log
-       * @param {object} [oOpt] { withRefs: true/false } - kèm cột productionorder
+       * @param {object} [oOpt] giữ để tương thích chữ ký cũ, không còn tác dụng
        */
       exportPp: async function (oModel, sFilename, oOpt) {
         if (!oModel) throw new Error("Thiếu model 'pp' (zpp_ui_zuplsx_o4).");
@@ -429,13 +427,13 @@ sap.ui.define(
             "Dòng lịch sử này không có Filename (lệnh tạo trước khi log lưu filename).",
           );
         }
-        const bRefs = !oOpt || oOpt.withRefs !== false;
 
-        const aCols = bRefs ? PP_COLS.concat(PP_REF_COLS) : PP_COLS.slice();
+        const aCols = PP_COLS.slice();
+        // ProductionOrder vẫn được đọc để ghi vào sheet Info, dù không còn là cột Data
         const aProps = aCols
           .filter((c) => c.p)
           .map((c) => c.p)
-          .concat(["Filename"]);
+          .concat(["Filename", "ProductionOrder"]);
 
         const aRows = await _readAll(
           oModel,
@@ -449,6 +447,14 @@ sap.ui.define(
           throw new Error("Không tìm thấy lệnh nào thuộc file " + sFilename);
         }
 
+        const sOrders = aRows
+          .map((r) => _s(r.ProductionOrder).trim())
+          .filter((s) => s !== "" && !/^0+$/.test(s))
+          .join(", ");
+
+        const bNoUnit = aRows.every((r) => _s(r.BaseUnit).trim() === "");
+
+        const sOut = _outName(sFilename);
         const oWb = _buildWorkbook(
           aCols,
           _labels(PpExcelTemplate, PP_REF_COLS),
@@ -460,16 +466,27 @@ sap.ui.define(
             "So dong": aRows.length,
             "Ngay dung lai": new Date().toISOString(),
             "Nguon du lieu": "Log ZPP_TB_ZUPLSX (chi cac dong da tao lenh thanh cong)",
-            "Cot khong co trong log": MISSING_PP.join(", "),
-            "Luu y":
-              "Cot productionorder co gia tri -> upload lai se BO QUA dong do. Xoa cot nay neu muon tao lenh moi.",
+            "Lenh da tao": sOrders || "(khong co)",
+            "Upload lai":
+              "File nay la template sach: doi ten file roi upload va Post la tao " +
+              "duoc lenh moi. Khong can xoa cot nao.",
+            "Cot longtext":
+              "ZPP_TB_ZUPLSX khong co cot longtext nen ghi chu khong dung lai duoc. " +
+              "Dien lai neu can.",
+            "Cot baseunit": bNoUnit
+              ? "Trong tren moi dong. Du lieu post TRUOC ban va ZPP_CL_ZUPLSX_VALIDATOR " +
+                "(nhanh ELSE lay MARA-MEINS) khong luu don vi tinh. De trong van post lai duoc: " +
+                "SAP tu lay theo material."
+              : "Lay tu log.",
+            "Luu y": "Day la file DUNG LAI tu log, khong phai file goc.",
           },
         );
 
-        XLSX.writeFile(oWb, _outName(sFilename));
-        return { rows: aRows.length, file: _outName(sFilename), missing: MISSING_PP };
+        XLSX.writeFile(oWb, sOut);
+        return { rows: aRows.length, file: sOut, missing: MISSING_PP, orders: sOrders };
       },
-               /**
+
+      /**
        * Dựng lại file GR của một lần upload. Mỗi lần gọi uploadExcel sinh 1 BatchId
        * dùng chung cho mọi GR trong file, nên BatchId chính là định danh của file.
        * Document Date / Movement Type nằm ở header, các cột PO nằm ở item —
@@ -553,15 +570,16 @@ sap.ui.define(
             "Ngay dung lai": new Date().toISOString(),
             "Nguon du lieu": "Staging ZMM_TB_GR_H / ZMM_TB_GR_I",
             "Cot khong co trong log": MISSING_GR.join(", ") || "(khong co)",
-            "Luu y":
-              "Day la file DUNG LAI tu staging, khong phai file goc. Xoa sheet Info va cot tham chieu truoc khi upload lai.",
+            "Upload lai":
+              "Hai cot tham chieu material document khong thuoc template nen " +
+              "validator bo qua, khong can xoa.",
+            "Luu y": "Day la file DUNG LAI tu staging, khong phai file goc.",
           },
         );
 
         XLSX.writeFile(oWb, sOutName);
         return { rows: aRows.length, file: sOutName, missing: MISSING_GR };
       },
-
     };
   },
 );
